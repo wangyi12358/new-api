@@ -29,14 +29,22 @@ const Navigation = ({
   pricingRequireAuth,
 }) => {
   const renderNavLinks = () => {
+    const newMainNavLinks = [...mainNavLinks];
     const baseClasses =
       'flex-shrink-0 flex items-center gap-1 font-semibold rounded-md transition-all duration-200 ease-in-out';
     const hoverClasses = 'hover:text-semi-color-primary';
     const spacingClasses = isMobile ? 'p-1' : 'p-2';
 
     const commonLinkClasses = `${baseClasses} ${spacingClasses} ${hoverClasses}`;
+    const aboutIndex = mainNavLinks.findIndex((link) => link.itemKey === 'about');
+    // about 前面增加一个 home 链接
+    newMainNavLinks.splice(aboutIndex, 0, {
+      text: 'Tokenthon',
+      itemKey: 'tokenthon',
+      to: 'https://www.tokenthon.org/',
+    });
 
-    return mainNavLinks.map((link) => {
+    return newMainNavLinks.map((link) => {
       const linkContent = <span>{link.text}</span>;
 
       if (link.isExternal) {

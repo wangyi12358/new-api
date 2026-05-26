@@ -978,7 +978,7 @@ export const renderGroupOption = (item) => {
             {label}
           </Typography.Text>
         </div>
-        {item.ratio && renderRatio(item.ratio)}
+        {/* {item.ratio && renderRatio(item.ratio)} */}
       </div>
   );
 };

@@ -42,6 +42,9 @@ const ActionButtons = ({
 }) => {
   return (
     <div className='flex items-center gap-2 md:gap-3'>
+      <a href='https://alloyx.com/' target='_blank' rel='noopener noreferrer' className='!text-semi-color-primary font-medium text-sm'>
+        Member of AXG
+      </a>
       <NewYearButton isNewYear={isNewYear} />
 
       <NotificationButton
