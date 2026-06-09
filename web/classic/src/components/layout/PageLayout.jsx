@@ -39,11 +39,14 @@ import { UserContext } from '../../context/User';
 import { StatusContext } from '../../context/Status';
 import { useLocation } from 'react-router-dom';
 import { normalizeLanguage } from '../../i18n/language';
+import TermsOfUseModal from './TermsOfUseModal';
+import { hasAcceptedKovarTerms } from '../../constants/kovarTermsOfUse';
 const { Sider, Content, Header } = Layout;
 
 const PageLayout = () => {
   const [userState, userDispatch] = useContext(UserContext);
   const [, statusDispatch] = useContext(StatusContext);
+  const [termsAccepted, setTermsAccepted] = useState(hasAcceptedKovarTerms);
   const isMobile = useIsMobile();
   const [collapsed, , setCollapsed] = useSidebarCollapsed();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -145,12 +148,25 @@ const PageLayout = () => {
   }, [i18n, userState?.user?.setting]);
 
   return (
-    <Layout
+    <>
+      <TermsOfUseModal
+        visible={!termsAccepted}
+        onAccept={() => setTermsAccepted(true)}
+        isMobile={isMobile}
+      />
+      <Layout
       className='app-layout'
       style={{
         display: 'flex',
         flexDirection: 'column',
         overflow: isMobile ? 'visible' : 'hidden',
+        ...(termsAccepted
+          ? {}
+          : {
+              pointerEvents: 'none',
+              userSelect: 'none',
+              filter: 'blur(4px)',
+            }),
       }}
     >
       <Header
@@ -235,6 +251,7 @@ const PageLayout = () => {
       </Layout>
       <ToastContainer />
     </Layout>
+    </>
   );
 };
 

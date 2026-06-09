@@ -91,15 +91,18 @@ export default defineConfig({
     host: '0.0.0.0',
     proxy: {
       '/api': {
-        target: 'https://kovar.ai',
+        // target: 'https://kovar.ai',
+        target: 'http://127.0.0.1:3000',
         changeOrigin: true,
       },
       '/mj': {
-        target: 'https://kovar.ai',
+        // target: 'https://kovar.ai',
+        target: 'http://127.0.0.1:3000',
         changeOrigin: true,
       },
       '/pg': {
-        target: 'https://kovar.ai',
+        // target: 'https://kovar.ai',
+        target: 'http://127.0.0.1:3000',
         changeOrigin: true,
       },
     },

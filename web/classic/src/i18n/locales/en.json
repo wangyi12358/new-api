@@ -3825,6 +3825,11 @@
     "并确认自行承担部署": "confirm that I bear legal responsibility arising from deployment",
     "运营和收费行为产生的法律责任": "operation and charging behavior",
     "，": ", ",
-    "、": ", "
+    "、": ", ",
+    "KOVAR 使用条款": "KOVAR Terms of Use",
+    "我已阅读并同意 KOVAR 使用条款": "I have read and agree to the KOVAR Terms of Use",
+    "我同意": "I Accept",
+    "不同意": "Decline",
+    "请阅读以下使用条款。同意后方可继续使用 KOVAR 服务。": "Please read the Terms of Use below. You must accept them to continue using KOVAR services."
   }
 }

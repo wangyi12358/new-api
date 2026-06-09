@@ -3648,6 +3648,11 @@
     "并确认自行承担部署": "confirm that I bear legal responsibility arising from deployment",
     "运营和收费行为产生的法律责任": "operation and charging behavior",
     "，": ", ",
-    "、": ", "
+    "、": ", ",
+    "KOVAR 使用条款": "KOVAR 利用規約",
+    "我已阅读并同意 KOVAR 使用条款": "KOVAR 利用規約を読み、同意します",
+    "我同意": "同意する",
+    "不同意": "同意しない",
+    "请阅读以下使用条款。同意后方可继续使用 KOVAR 服务。": "以下の利用規約をお読みください。同意後に KOVAR サービスをご利用いただけます。"
   }
 }
