@@ -18,7 +18,7 @@ services:
   new-api:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     image: new-api-local:latest
     container_name: kovar-v2
     restart: always
