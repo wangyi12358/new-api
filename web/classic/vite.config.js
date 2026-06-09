@@ -22,89 +22,121 @@ import { defineConfig, transformWithEsbuild } from 'vite';
 import pkg from '@douyinfe/vite-plugin-semi';
 import path from 'path';
 import { codeInspectorPlugin } from 'code-inspector-plugin';
+
 const { vitePluginSemi } = pkg;
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
-  },
-  plugins: [
-    codeInspectorPlugin({
-      bundler: 'vite',
-    }),
-    {
-      name: 'treat-js-files-as-jsx',
-      async transform(code, id) {
-        if (!/src\/.*\.js$/.test(id)) {
-          return null;
-        }
+export default defineConfig(({ command }) => {
+  const isBuild = command === 'build';
 
-        // Use the exposed transform from vite, instead of directly
-        // transforming with esbuild
-        return transformWithEsbuild(code, id, {
-          loader: 'jsx',
-          jsx: 'automatic',
-        });
+  return {
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
       },
     },
-    react(),
-    vitePluginSemi({
-      cssLayer: true,
-    }),
-  ],
-  optimizeDeps: {
-    force: true,
-    esbuildOptions: {
-      loader: {
-        '.js': 'jsx',
-        '.json': 'json',
+    plugins: [
+      // Dev-only: avoid shipping inspector hooks and extra transforms in production builds.
+      !isBuild &&
+        codeInspectorPlugin({
+          bundler: 'vite',
+        }),
+      {
+        name: 'treat-js-files-as-jsx',
+        async transform(code, id) {
+          if (!/src\/.*\.js$/.test(id)) {
+            return null;
+          }
+
+          return transformWithEsbuild(code, id, {
+            loader: 'jsx',
+            jsx: 'automatic',
+          });
+        },
       },
+      // .js files are pre-transformed above; only run React plugin on .jsx to avoid double passes.
+      react({
+        include: /\.jsx$/,
+      }),
+      vitePluginSemi({
+        cssLayer: true,
+      }),
+    ].filter(Boolean),
+    esbuild: {
+      jsx: 'automatic',
+      legalComments: 'none',
     },
-  },
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          'react-core': ['react', 'react-dom', 'react-router-dom'],
-          'semi-ui': ['@douyinfe/semi-icons', '@douyinfe/semi-ui'],
-          tools: ['axios', 'history', 'marked'],
-          'react-components': [
-            'react-dropzone',
-            'react-fireworks',
-            'react-telegram-login',
-            'react-toastify',
-            'react-turnstile',
-          ],
-          i18n: [
-            'i18next',
-            'react-i18next',
-            'i18next-browser-languagedetector',
-          ],
+    optimizeDeps: {
+      // force: true re-scans deps on every dev start; only needed when debugging dep cache.
+      esbuildOptions: {
+        loader: {
+          '.js': 'jsx',
+          '.json': 'json',
         },
       },
     },
-  },
-  server: {
-    host: '0.0.0.0',
-    proxy: {
-      '/api': {
-        // target: 'https://kovar.ai',
-        target: 'http://127.0.0.1:3000',
-        changeOrigin: true,
-      },
-      '/mj': {
-        // target: 'https://kovar.ai',
-        target: 'http://127.0.0.1:3000',
-        changeOrigin: true,
-      },
-      '/pg': {
-        // target: 'https://kovar.ai',
-        target: 'http://127.0.0.1:3000',
-        changeOrigin: true,
+    build: {
+      target: 'es2020',
+      // Skip gzip size calculation — saves noticeable time on large chunks (mermaid, semi-ui, etc.).
+      reportCompressedSize: false,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'react-core': ['react', 'react-dom', 'react-router-dom'],
+            'semi-ui': ['@douyinfe/semi-icons', '@douyinfe/semi-ui'],
+            tools: ['axios', 'history', 'marked'],
+            'react-components': [
+              'react-dropzone',
+              'react-fireworks',
+              'react-telegram-login',
+              'react-toastify',
+              'react-turnstile',
+            ],
+            i18n: [
+              'i18next',
+              'react-i18next',
+              'i18next-browser-languagedetector',
+            ],
+            // Split heavy vendors so minification can run in parallel on CI/low-core servers.
+            mermaid: ['mermaid'],
+            vchart: [
+              '@visactor/vchart',
+              '@visactor/react-vchart',
+              '@visactor/vchart-semi-theme',
+            ],
+            markdown: [
+              'react-markdown',
+              'remark-gfm',
+              'remark-math',
+              'remark-breaks',
+              'rehype-highlight',
+              'rehype-katex',
+              'katex',
+            ],
+            icons: ['@lobehub/icons', 'lucide-react', 'react-icons'],
+          },
+        },
       },
     },
-  },
+    server: {
+      host: '0.0.0.0',
+      proxy: {
+        '/api': {
+          // target: 'https://kovar.ai',
+          target: 'http://127.0.0.1:3000',
+          changeOrigin: true,
+        },
+        '/mj': {
+          // target: 'https://kovar.ai',
+          target: 'http://127.0.0.1:3000',
+          changeOrigin: true,
+        },
+        '/pg': {
+          // target: 'https://kovar.ai',
+          target: 'http://127.0.0.1:3000',
+          changeOrigin: true,
+        },
+      },
+    },
+  };
 });
