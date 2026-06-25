@@ -21,6 +21,7 @@ import React, { useEffect, useState } from 'react';
 import { Banner, Button, Card, Spin, Tabs } from '@douyinfe/semi-ui';
 import SettingsGeneralPayment from '../../pages/Setting/Payment/SettingsGeneralPayment';
 import SettingsPaymentGateway from '../../pages/Setting/Payment/SettingsPaymentGateway';
+import SettingsPaymentGatewayAlipay from '../../pages/Setting/Payment/SettingsPaymentGatewayAlipay';
 import SettingsPaymentGatewayStripe from '../../pages/Setting/Payment/SettingsPaymentGatewayStripe';
 import SettingsPaymentGatewayCreem from '../../pages/Setting/Payment/SettingsPaymentGatewayCreem';
 import SettingsPaymentGatewayWaffo from '../../pages/Setting/Payment/SettingsPaymentGatewayWaffo';
@@ -44,6 +45,15 @@ const PaymentSetting = () => {
     PayMethods: '',
     AmountOptions: '',
     AmountDiscount: '',
+
+    AlipayAppID: '',
+    AlipayPrivateKey: '',
+    AlipayPublicKey: '',
+    AlipayUnitPrice: 8.0,
+    AlipayMinTopUp: 1,
+    AlipayNotifyURL: '',
+    AlipayReturnURL: '',
+    AlipayProductName: 'new-api Balance Top-up',
 
     StripeApiSecret: '',
     StripeWebhookSecret: '',
@@ -158,6 +168,8 @@ const PaymentSetting = () => {
             break;
           case 'Price':
           case 'MinTopUp':
+          case 'AlipayUnitPrice':
+          case 'AlipayMinTopUp':
           case 'StripeUnitPrice':
           case 'StripeMinTopUp':
             newInputs[item.key] = parseFloat(item.value);
@@ -284,6 +296,13 @@ const PaymentSetting = () => {
               </Tabs.TabPane>
               <Tabs.TabPane tab={t('Stripe 设置')} itemKey='stripe'>
                 <SettingsPaymentGatewayStripe
+                  options={inputs}
+                  refresh={onRefresh}
+                  hideSectionTitle
+                />
+              </Tabs.TabPane>
+              <Tabs.TabPane tab={t('支付宝设置')} itemKey='alipay'>
+                <SettingsPaymentGatewayAlipay
                   options={inputs}
                   refresh={onRefresh}
                   hideSectionTitle

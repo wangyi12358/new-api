@@ -54,6 +54,7 @@ function parseJsonArray(data: unknown): unknown[] {
 
 function parsePaymentMethods(
   data: unknown,
+  alipayMinTopup: number,
   stripeMinTopup: number
 ): PaymentMethod[] {
   return parseJsonArray(data)
@@ -71,9 +72,11 @@ function parsePaymentMethods(
         type,
         color: typeof item.color === 'string' ? item.color : undefined,
         min_topup:
-          type === 'stripe' && normalizedMinTopup <= 0
-            ? stripeMinTopup
-            : normalizedMinTopup,
+          type === 'alipay_gateway' && normalizedMinTopup <= 0
+            ? alipayMinTopup
+            : type === 'stripe' && normalizedMinTopup <= 0
+              ? stripeMinTopup
+              : normalizedMinTopup,
       }
     })
     .filter((item) => item.name && item.type && item.type !== 'waffo')
@@ -182,6 +185,7 @@ export function useTopupInfo() {
         ...response.data,
         pay_methods: parsePaymentMethods(
           response.data.pay_methods,
+          response.data.alipay_min_topup || 0,
           response.data.stripe_min_topup
         ),
         amount_options: parseAmountOptions(response.data.amount_options),

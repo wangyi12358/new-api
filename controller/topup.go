@@ -52,6 +52,26 @@ func GetTopUpInfo(c *gin.Context) {
 		}
 	}
 
+	if isAlipayTopUpEnabled() {
+		hasAlipay := false
+		for _, method := range payMethods {
+			if method["type"] == "alipay_gateway" {
+				hasAlipay = true
+				break
+			}
+		}
+
+		if !hasAlipay {
+			alipayMethod := map[string]string{
+				"name":      "Alipay",
+				"type":      "alipay_gateway",
+				"color":     "#1677FF",
+				"min_topup": strconv.Itoa(setting.AlipayMinTopUp),
+			}
+			payMethods = append(payMethods, alipayMethod)
+		}
+	}
+
 	// Waffo Pancake displayed above the legacy Waffo gateway.
 	enableWaffoPancake := isWaffoPancakeTopUpEnabled()
 	if enableWaffoPancake {
@@ -97,6 +117,7 @@ func GetTopUpInfo(c *gin.Context) {
 
 	data := gin.H{
 		"enable_online_topup":              isEpayTopUpEnabled(),
+		"enable_alipay_topup":              isAlipayTopUpEnabled(),
 		"enable_stripe_topup":              isStripeTopUpEnabled(),
 		"enable_creem_topup":               isCreemTopUpEnabled(),
 		"enable_waffo_topup":               enableWaffo,
@@ -113,6 +134,7 @@ func GetTopUpInfo(c *gin.Context) {
 		"creem_products":          setting.CreemProducts,
 		"pay_methods":             payMethods,
 		"min_topup":               operation_setting.MinTopUp,
+		"alipay_min_topup":        setting.AlipayMinTopUp,
 		"stripe_min_topup":        setting.StripeMinTopUp,
 		"waffo_min_topup":         setting.WaffoMinTopUp,
 		"waffo_pancake_min_topup": setting.WaffoPancakeMinTopUp,

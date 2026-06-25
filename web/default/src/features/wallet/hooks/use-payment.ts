@@ -21,13 +21,16 @@ import i18next from 'i18next'
 import { toast } from 'sonner'
 import {
   calculateAmount,
+  calculateAlipayAmount,
   calculateStripeAmount,
   calculateWaffoPancakeAmount,
   requestPayment,
+  requestAlipayPayment,
   requestStripePayment,
   isApiSuccess,
 } from '../api'
 import {
+  isAlipayGatewayPayment,
   isStripePayment,
   isWaffoPancakePayment,
   submitPaymentForm,
@@ -48,9 +51,12 @@ export function usePayment() {
       try {
         setCalculating(true)
 
+        const isAlipayGateway = isAlipayGatewayPayment(paymentType)
         const isStripe = isStripePayment(paymentType)
         const isPancake = isWaffoPancakePayment(paymentType)
-        const response = isStripe
+        const response = isAlipayGateway
+          ? await calculateAlipayAmount({ amount: topupAmount })
+          : isStripe
           ? await calculateStripeAmount({ amount: topupAmount })
           : isPancake
             ? await calculateWaffoPancakeAmount({ amount: topupAmount })
@@ -81,10 +87,16 @@ export function usePayment() {
       try {
         setProcessing(true)
 
+        const isAlipayGateway = isAlipayGatewayPayment(paymentType)
         const isStripe = isStripePayment(paymentType)
         const amount = Math.floor(topupAmount)
 
-        const response = isStripe
+        const response = isAlipayGateway
+          ? await requestAlipayPayment({
+              amount,
+              payment_method: 'alipay',
+            })
+          : isStripe
           ? await requestStripePayment({
               amount,
               payment_method: 'stripe',
@@ -99,15 +111,15 @@ export function usePayment() {
           return false
         }
 
-        // Handle Stripe payment
-        if (isStripe && response.data?.pay_link) {
+        // Handle link-based checkout payments
+        if ((isAlipayGateway || isStripe) && response.data?.pay_link) {
           window.open(response.data.pay_link as string, '_blank')
           toast.success(i18next.t('Redirecting to payment page...'))
           return true
         }
 
-        // Handle non-Stripe payment
-        if (!isStripe && response.data) {
+        // Handle form-based gateway payments
+        if (!isAlipayGateway && !isStripe && response.data) {
           const url = (response as unknown as { url?: string }).url
           if (url) {
             submitPaymentForm(url, response.data)

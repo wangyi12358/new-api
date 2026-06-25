@@ -78,6 +78,9 @@ const TopUp = () => {
   const [enableStripeTopUp, setEnableStripeTopUp] = useState(
     statusState?.status?.enable_stripe_topup || false,
   );
+  const [enableAlipayTopUp, setEnableAlipayTopUp] = useState(
+    statusState?.status?.enable_alipay_topup || false,
+  );
   const [statusLoading, setStatusLoading] = useState(true);
 
   // Creem 相关状态
@@ -152,6 +155,9 @@ const TopUp = () => {
   };
 
   const requestAmountByPayment = async (payment, value) => {
+    if (payment === 'alipay_gateway') {
+      return getAlipayAmount(value);
+    }
     if (payment === 'stripe') {
       return getStripeAmount(value);
     }
@@ -209,7 +215,12 @@ const TopUp = () => {
   };
 
   const preTopUp = async (payment) => {
-    if (payment === 'stripe') {
+    if (payment === 'alipay_gateway') {
+      if (!enableAlipayTopUp) {
+        showError(t('管理员未开启支付宝充值！'));
+        return;
+      }
+    } else if (payment === 'stripe') {
       if (!enableStripeTopUp) {
         showError(t('管理员未开启Stripe充值！'));
         return;
@@ -273,7 +284,11 @@ const TopUp = () => {
       return;
     }
 
-    if (payWay === 'stripe') {
+    if (payWay === 'alipay_gateway') {
+      if (amount === 0) {
+        await getAlipayAmount();
+      }
+    } else if (payWay === 'stripe') {
       // Stripe 支付处理
       if (amount === 0) {
         await getStripeAmount();
@@ -292,7 +307,12 @@ const TopUp = () => {
     setConfirmLoading(true);
     try {
       let res;
-      if (payWay === 'stripe') {
+      if (payWay === 'alipay_gateway') {
+        res = await API.post('/api/user/alipay/pay', {
+          amount: parseInt(topUpCount),
+          payment_method: 'alipay',
+        });
+      } else if (payWay === 'stripe') {
         // Stripe 支付请求
         res = await API.post('/api/user/stripe/pay', {
           amount: parseInt(topUpCount),
@@ -309,7 +329,7 @@ const TopUp = () => {
       if (res !== undefined) {
         const { message, data } = res.data;
         if (message === 'success') {
-          if (payWay === 'stripe') {
+          if (payWay === 'alipay_gateway' || payWay === 'stripe') {
             // Stripe 支付回调处理
             window.open(data.pay_link, '_blank');
           } else {
@@ -624,6 +644,16 @@ const TopUp = () => {
 
               // Stripe 的最小充值从后端字段回填
               if (
+                method.type === 'alipay_gateway' &&
+                (!method.min_topup || method.min_topup <= 0)
+              ) {
+                const alipayMin = Number(data.alipay_min_topup);
+                if (Number.isFinite(alipayMin)) {
+                  method.min_topup = alipayMin;
+                }
+              }
+
+              if (
                 method.type === 'stripe' &&
                 (!method.min_topup || method.min_topup <= 0)
               ) {
@@ -634,7 +664,10 @@ const TopUp = () => {
               }
 
               if (!method.color) {
-                if (method.type === 'alipay') {
+                if (
+                  method.type === 'alipay' ||
+                  method.type === 'alipay_gateway'
+                ) {
                   method.color = 'rgba(var(--semi-blue-5), 1)';
                 } else if (method.type === 'wxpay') {
                   method.color = 'rgba(var(--semi-green-5), 1)';
@@ -654,6 +687,7 @@ const TopUp = () => {
           // 这个逻辑现在由后端处理，如果 Stripe 启用，后端会在 pay_methods 中包含它
 
           setPayMethods(payMethods);
+          const enableAlipayTopUp = data.enable_alipay_topup || false;
           const enableStripeTopUp = data.enable_stripe_topup || false;
           const enableOnlineTopUp = data.enable_online_topup || false;
           const enableCreemTopUp = data.enable_creem_topup || false;
@@ -662,6 +696,8 @@ const TopUp = () => {
             data.enable_waffo_pancake_topup || false;
           const minTopUpValue = enableOnlineTopUp
             ? data.min_topup
+            : enableAlipayTopUp
+              ? data.alipay_min_topup
             : enableStripeTopUp
               ? data.stripe_min_topup
               : enableWaffoTopUp
@@ -670,6 +706,7 @@ const TopUp = () => {
                   ? data.waffo_pancake_min_topup
                   : 1;
           setEnableOnlineTopUp(enableOnlineTopUp);
+          setEnableAlipayTopUp(enableAlipayTopUp);
           setEnableStripeTopUp(enableStripeTopUp);
           setEnableCreemTopUp(enableCreemTopUp);
           setEnableWaffoTopUp(enableWaffoTopUp);
@@ -703,7 +740,20 @@ const TopUp = () => {
           }
 
           // 初始化显示实付金额
-          getAmount(minTopUpValue);
+          requestAmountByPayment(
+            enableOnlineTopUp
+              ? 'alipay'
+              : enableAlipayTopUp
+                ? 'alipay_gateway'
+                : enableStripeTopUp
+                  ? 'stripe'
+                  : enableWaffoPancakeTopUp
+                    ? 'waffo_pancake'
+                    : enableWaffoTopUp
+                      ? 'waffo:0'
+                      : 'alipay',
+            minTopUpValue,
+          );
         } catch (e) {
           setPayMethods([]);
         }
@@ -857,6 +907,33 @@ const TopUp = () => {
     }
   };
 
+  const getAlipayAmount = async (value) => {
+    if (value === undefined) {
+      value = topUpCount;
+    }
+    setAmountLoading(true);
+    try {
+      const res = await API.post('/api/user/alipay/amount', {
+        amount: parseFloat(value),
+      });
+      if (res !== undefined) {
+        const { message, data } = res.data;
+        if (message === 'success') {
+          setAmount(parseFloat(data));
+        } else {
+          setAmount(0);
+          Toast.error({ content: '错误：' + data, id: 'getAmount' });
+        }
+      } else {
+        showError(res);
+      }
+    } catch (err) {
+      // amount fetch failed silently
+    } finally {
+      setAmountLoading(false);
+    }
+  };
+
   const handleCancel = () => {
     setOpen(false);
   };
@@ -974,6 +1051,7 @@ const TopUp = () => {
         <RechargeCard
           t={t}
           enableOnlineTopUp={enableOnlineTopUp}
+          enableAlipayTopUp={enableAlipayTopUp}
           enableStripeTopUp={enableStripeTopUp}
           enableCreemTopUp={enableCreemTopUp}
           creemProducts={creemProducts}

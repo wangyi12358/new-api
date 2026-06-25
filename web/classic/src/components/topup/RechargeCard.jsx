@@ -56,6 +56,7 @@ const { Text } = Typography;
 const RechargeCard = ({
   t,
   enableOnlineTopUp,
+  enableAlipayTopUp,
   enableStripeTopUp,
   enableCreemTopUp,
   creemProducts,
@@ -231,6 +232,7 @@ const RechargeCard = ({
             <Spin size='large' />
           </div>
         ) : enableOnlineTopUp ||
+          enableAlipayTopUp ||
           enableStripeTopUp ||
           enableCreemTopUp ||
           enableWaffoTopUp ||
@@ -241,6 +243,7 @@ const RechargeCard = ({
           >
             <div className='space-y-6'>
               {(enableOnlineTopUp ||
+                enableAlipayTopUp ||
                 enableStripeTopUp ||
                 enableWaffoTopUp ||
                 enableWaffoPancakeTopUp) && (
@@ -251,6 +254,7 @@ const RechargeCard = ({
                       label={t('充值数量')}
                       disabled={
                         !enableOnlineTopUp &&
+                        !enableAlipayTopUp &&
                         !enableStripeTopUp &&
                         !enableWaffoTopUp &&
                         !enableWaffoPancakeTopUp
@@ -313,6 +317,8 @@ const RechargeCard = ({
                           {regularPayMethods.map((payMethod) => {
                             const minTopupVal =
                               Number(payMethod.min_topup) || 0;
+                            const isAlipayGateway =
+                              payMethod.type === 'alipay_gateway';
                             const isStripe = payMethod.type === 'stripe';
                             const isWaffo =
                               typeof payMethod.type === 'string' &&
@@ -321,9 +327,11 @@ const RechargeCard = ({
                               payMethod.type === 'waffo_pancake';
                             const disabled =
                               (!enableOnlineTopUp &&
+                                !isAlipayGateway &&
                                 !isStripe &&
                                 !isWaffo &&
                                 !isWaffoPancake) ||
+                              (!enableAlipayTopUp && isAlipayGateway) ||
                               (!enableStripeTopUp && isStripe) ||
                               (!enableWaffoTopUp && isWaffo) ||
                               (!enableWaffoPancakeTopUp && isWaffoPancake) ||
@@ -340,7 +348,8 @@ const RechargeCard = ({
                                   paymentLoading && payWay === payMethod.type
                                 }
                                 icon={
-                                  payMethod.type === 'alipay' ? (
+                                  payMethod.type === 'alipay' ||
+                                  payMethod.type === 'alipay_gateway' ? (
                                     <SiAlipay size={18} color='#1677FF' />
                                   ) : payMethod.type === 'wxpay' ? (
                                     <SiWechat size={18} color='#07C160' />
@@ -411,7 +420,10 @@ const RechargeCard = ({
                 </Row>
               )}
 
-              {(enableOnlineTopUp || enableStripeTopUp || enableWaffoTopUp) && (
+              {(enableOnlineTopUp ||
+                enableAlipayTopUp ||
+                enableStripeTopUp ||
+                enableWaffoTopUp) && (
                 <Form.Slot
                   label={
                     <div className='flex items-center gap-2'>

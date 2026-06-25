@@ -67,6 +67,29 @@ func TestCreemWebhookEnabledRequiresTopUpAndWebhookConfig(t *testing.T) {
 	require.False(t, isCreemWebhookEnabled())
 }
 
+func TestAlipayWebhookEnabledRequiresTopUpAndWebhookConfig(t *testing.T) {
+	confirmPaymentComplianceForTest(t)
+	originalAppID := setting.AlipayAppID
+	originalPrivateKey := setting.AlipayPrivateKey
+	originalPublicKey := setting.AlipayPublicKey
+	t.Cleanup(func() {
+		setting.AlipayAppID = originalAppID
+		setting.AlipayPrivateKey = originalPrivateKey
+		setting.AlipayPublicKey = originalPublicKey
+	})
+
+	setting.AlipayAppID = "2021000111111111"
+	setting.AlipayPrivateKey = ""
+	setting.AlipayPublicKey = "public"
+	require.False(t, isAlipayWebhookEnabled())
+
+	setting.AlipayPrivateKey = "private"
+	require.True(t, isAlipayWebhookEnabled())
+
+	setting.AlipayPublicKey = ""
+	require.False(t, isAlipayWebhookEnabled())
+}
+
 func TestWaffoWebhookEnabledRequiresTopUpAndWebhookConfig(t *testing.T) {
 	confirmPaymentComplianceForTest(t)
 	originalEnabled := setting.WaffoEnabled

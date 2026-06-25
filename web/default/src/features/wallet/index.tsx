@@ -168,7 +168,7 @@ export function Wallet(props: WalletProps) {
 
     try {
       // Validate minimum topup
-      const minTopup = getMinTopupAmount(topupInfo)
+      const minTopup = method.min_topup || getMinTopupAmount(topupInfo)
       if (topupAmount < minTopup) {
         return
       }
