@@ -39,6 +39,9 @@ import type {
   WaffoPaymentResponse,
   WaffoPancakePaymentRequest,
   WaffoPancakePaymentResponse,
+  AxoneChainsResponse,
+  AxoneAddressRequest,
+  AxoneAddressResponse,
 } from './types'
 
 // ============================================================================
@@ -188,6 +191,22 @@ export async function requestWaffoPancakePayment(
   request: WaffoPancakePaymentRequest
 ): Promise<WaffoPancakePaymentResponse> {
   const res = await api.post('/api/user/waffo-pancake/pay', request, {
+    skipBusinessError: true,
+  } as Record<string, unknown>)
+  return res.data
+}
+
+export async function getAxoneChains(): Promise<AxoneChainsResponse> {
+  const res = await api.get('/api/user/axone/chains', {
+    skipBusinessError: true,
+  } as Record<string, unknown>)
+  return res.data
+}
+
+export async function requestAxoneAddress(
+  request: AxoneAddressRequest
+): Promise<AxoneAddressResponse> {
+  const res = await api.post('/api/user/axone/address', request, {
     skipBusinessError: true,
   } as Record<string, unknown>)
   return res.data

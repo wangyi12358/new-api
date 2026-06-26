@@ -48,6 +48,7 @@ import type {
   CreemProduct,
   WaffoPayMethod,
 } from '../types'
+import { AxoneTopupSection } from './axone-topup-section'
 import { CreemProductsSection } from './creem-products-section'
 
 interface RechargeFormCardProps {
@@ -130,7 +131,10 @@ export function RechargeFormCard({
     topupInfo?.enable_stripe_topup ||
     enableWaffoTopup ||
     enableWaffoPancakeTopup
-  const hasAnyTopup = hasConfigurableTopup || enableCreemTopup
+  const hasAnyTopup =
+    hasConfigurableTopup ||
+    enableCreemTopup ||
+    topupInfo?.enable_axone_topup === true
   const hasStandardPaymentMethods =
     Array.isArray(topupInfo?.pay_methods) && topupInfo.pay_methods.length > 0
   const hasWaffoPaymentMethods =
@@ -445,6 +449,11 @@ export function RechargeFormCard({
             />
           </div>
         )}
+
+      <AxoneTopupSection
+        enabled={topupInfo?.enable_axone_topup === true}
+        currencies={topupInfo?.axone_currencies}
+      />
 
       {/* Redemption Code Section */}
       {redemptionEnabled ? (

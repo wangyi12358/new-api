@@ -99,6 +99,11 @@ func InitOptionMap() {
 	common.OptionMap["CreemProducts"] = setting.CreemProducts
 	common.OptionMap["CreemTestMode"] = strconv.FormatBool(setting.CreemTestMode)
 	common.OptionMap["CreemWebhookSecret"] = setting.CreemWebhookSecret
+	common.OptionMap["AxoneEnabled"] = strconv.FormatBool(setting.AxoneEnabled)
+	common.OptionMap["AxoneBaseURL"] = setting.AxoneBaseURL
+	common.OptionMap["AxoneAccount"] = setting.AxoneAccount
+	common.OptionMap["AxonePassword"] = setting.AxonePassword
+	common.OptionMap["AxoneCurrencies"] = setting.AxoneCurrencies
 	common.OptionMap["WaffoEnabled"] = strconv.FormatBool(setting.WaffoEnabled)
 	common.OptionMap["WaffoApiKey"] = setting.WaffoApiKey
 	common.OptionMap["WaffoPrivateKey"] = setting.WaffoPrivateKey
@@ -442,6 +447,16 @@ func updateOptionMap(key string, value string) (err error) {
 		setting.CreemTestMode = value == "true"
 	case "CreemWebhookSecret":
 		setting.CreemWebhookSecret = value
+	case "AxoneEnabled":
+		setting.AxoneEnabled = value == "true"
+	case "AxoneBaseURL":
+		setting.AxoneBaseURL = value
+	case "AxoneAccount":
+		setting.AxoneAccount = value
+	case "AxonePassword":
+		setting.AxonePassword = value
+	case "AxoneCurrencies":
+		setting.AxoneCurrencies = value
 	case "WaffoEnabled":
 		setting.WaffoEnabled = value == "true"
 	case "WaffoApiKey":

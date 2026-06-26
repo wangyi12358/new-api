@@ -115,6 +115,8 @@ func GetTopUpInfo(c *gin.Context) {
 		}
 	}
 
+	enableAxone := isAxoneTopUpEnabled()
+
 	data := gin.H{
 		"enable_online_topup":              isEpayTopUpEnabled(),
 		"enable_alipay_topup":              isAlipayTopUpEnabled(),
@@ -122,6 +124,7 @@ func GetTopUpInfo(c *gin.Context) {
 		"enable_creem_topup":               isCreemTopUpEnabled(),
 		"enable_waffo_topup":               enableWaffo,
 		"enable_waffo_pancake_topup":       enableWaffoPancake,
+		"enable_axone_topup":               enableAxone,
 		"enable_redemption":                complianceConfirmed,
 		"payment_compliance_confirmed":     complianceConfirmed,
 		"payment_compliance_terms_version": operation_setting.CurrentComplianceTermsVersion,
@@ -131,7 +134,13 @@ func GetTopUpInfo(c *gin.Context) {
 			}
 			return nil
 		}(),
-		"creem_products":          setting.CreemProducts,
+		"creem_products": setting.CreemProducts,
+		"axone_currencies": func() interface{} {
+			if enableAxone {
+				return setting.GetAxoneCurrencies()
+			}
+			return nil
+		}(),
 		"pay_methods":             payMethods,
 		"min_topup":               operation_setting.MinTopUp,
 		"alipay_min_topup":        setting.AlipayMinTopUp,

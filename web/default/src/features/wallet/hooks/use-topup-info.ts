@@ -126,6 +126,12 @@ function parseAmountOptions(data: unknown): number[] {
     .filter((item) => Number.isFinite(item) && item > 0)
 }
 
+function parseStringArray(data: unknown): string[] {
+  return parseJsonArray(data)
+    .map((item) => (typeof item === 'string' ? item.trim().toUpperCase() : ''))
+    .filter(Boolean)
+}
+
 function parseDiscountMap(data: unknown): Record<number, number> {
   if (!data) {
     return {}
@@ -194,6 +200,7 @@ export function useTopupInfo() {
         waffo_pay_methods: parseWaffoPayMethods(
           response.data.waffo_pay_methods
         ),
+        axone_currencies: parseStringArray(response.data.axone_currencies),
       }
 
       setTopupInfo(processedData)

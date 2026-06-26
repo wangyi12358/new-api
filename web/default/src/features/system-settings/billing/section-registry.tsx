@@ -160,6 +160,13 @@ const BILLING_SECTIONS = [
           CreemTestMode: settings.CreemTestMode,
           CreemProducts: settings.CreemProducts,
         }}
+        axoneDefaultValues={{
+          AxoneEnabled: settings.AxoneEnabled ?? false,
+          AxoneBaseURL: settings.AxoneBaseURL ?? '',
+          AxoneAccount: settings.AxoneAccount ?? '',
+          AxonePassword: settings.AxonePassword ?? '',
+          AxoneCurrencies: settings.AxoneCurrencies ?? 'USDT,USDC',
+        }}
         waffoDefaultValues={{
           WaffoEnabled: settings.WaffoEnabled ?? false,
           WaffoApiKey: settings.WaffoApiKey ?? '',

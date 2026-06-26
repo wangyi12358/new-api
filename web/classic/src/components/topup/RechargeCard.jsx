@@ -61,6 +61,19 @@ const RechargeCard = ({
   enableCreemTopUp,
   creemProducts,
   creemPreTopUp,
+  enableAxoneTopUp,
+  axoneCurrencies,
+  selectedAxoneCurrency,
+  setSelectedAxoneCurrency,
+  axoneChains,
+  selectedAxoneChain,
+  setSelectedAxoneChain,
+  axoneAddress,
+  axoneChainLoading,
+  axoneAddressLoading,
+  getAxoneChains,
+  generateAxoneAddress,
+  handleCopyAxoneAddress,
   presetAmounts,
   selectedPreset,
   selectPresetAmount,
@@ -236,7 +249,8 @@ const RechargeCard = ({
           enableStripeTopUp ||
           enableCreemTopUp ||
           enableWaffoTopUp ||
-          enableWaffoPancakeTopUp ? (
+          enableWaffoPancakeTopUp ||
+          enableAxoneTopUp ? (
           <Form
             getFormApi={(api) => (onlineFormApiRef.current = api)}
             initValues={{ topUpCount: topUpCount }}
@@ -573,6 +587,99 @@ const RechargeCard = ({
                       </Card>
                     ))}
                   </div>
+                </Form.Slot>
+              )}
+
+              {enableAxoneTopUp && (
+                <Form.Slot label={t('稳定币充值')}>
+                  <Space vertical align='start' style={{ width: '100%' }}>
+                    <Banner
+                      type='info'
+                      closeIcon={null}
+                      description={t(
+                        '选择币种和链后生成钱包地址，用户向该地址转账即可完成稳定币充值。',
+                      )}
+                      fullMode={false}
+                    />
+                    <Row gutter={12} style={{ width: '100%' }}>
+                      <Col xs={24} md={12}>
+                        <Form.Select
+                          field='axoneCurrency'
+                          label={t('选择币种')}
+                          placeholder={t('请选择币种')}
+                          value={selectedAxoneCurrency}
+                          onChange={(value) => setSelectedAxoneCurrency(value)}
+                          optionList={(axoneCurrencies || []).map((currency) => ({
+                            label: currency,
+                            value: currency,
+                          }))}
+                        />
+                      </Col>
+                      <Col xs={24} md={12}>
+                        <Form.Select
+                          field='axoneChain'
+                          label={t('选择链')}
+                          placeholder={
+                            axoneChainLoading
+                              ? t('加载链列表中...')
+                              : t('请选择链')
+                          }
+                          value={selectedAxoneChain}
+                          onChange={(value) => setSelectedAxoneChain(value)}
+                          optionList={(axoneChains || []).map((chain) => ({
+                            label: `${chain.chain_name} (${chain.symbol})`,
+                            value: chain.chain_id,
+                          }))}
+                        />
+                      </Col>
+                    </Row>
+                    <Space>
+                      <Button
+                        theme='solid'
+                        type='primary'
+                        loading={axoneAddressLoading}
+                        onClick={generateAxoneAddress}
+                      >
+                        {t('生成钱包地址')}
+                      </Button>
+                      <Button
+                        icon={<Receipt size={14} />}
+                        loading={axoneChainLoading}
+                        onClick={getAxoneChains}
+                      >
+                        {t('刷新链列表')}
+                      </Button>
+                    </Space>
+                    {axoneAddress ? (
+                      <Card
+                        className='!rounded-xl w-full border-gray-200'
+                        bodyStyle={{ padding: '16px' }}
+                      >
+                        <Space vertical align='start' style={{ width: '100%' }}>
+                          <div className='flex items-center justify-between w-full gap-2'>
+                            <div>
+                              <div className='font-medium'>{t('钱包地址')}</div>
+                              <Text type='tertiary' size='small'>
+                                {selectedAxoneCurrency} · {selectedAxoneChain}
+                              </Text>
+                            </div>
+                            <Button onClick={handleCopyAxoneAddress}>
+                              {t('复制地址')}
+                            </Button>
+                          </div>
+                          <Text
+                            copyable={false}
+                            style={{
+                              wordBreak: 'break-all',
+                              fontFamily: 'monospace',
+                            }}
+                          >
+                            {axoneAddress}
+                          </Text>
+                        </Space>
+                      </Card>
+                    ) : null}
+                  </Space>
                 </Form.Slot>
               )}
             </div>

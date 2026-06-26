@@ -95,6 +95,14 @@ const TopUp = () => {
   const [waffoMinTopUp, setWaffoMinTopUp] = useState(1);
   const [enableWaffoPancakeTopUp, setEnableWaffoPancakeTopUp] = useState(false);
   const [waffoPancakeMinTopUp, setWaffoPancakeMinTopUp] = useState(1);
+  const [enableAxoneTopUp, setEnableAxoneTopUp] = useState(false);
+  const [axoneCurrencies, setAxoneCurrencies] = useState([]);
+  const [axoneChains, setAxoneChains] = useState([]);
+  const [selectedAxoneCurrency, setSelectedAxoneCurrency] = useState('');
+  const [selectedAxoneChain, setSelectedAxoneChain] = useState('');
+  const [axoneAddress, setAxoneAddress] = useState('');
+  const [axoneChainLoading, setAxoneChainLoading] = useState(false);
+  const [axoneAddressLoading, setAxoneAddressLoading] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [open, setOpen] = useState(false);
@@ -694,6 +702,7 @@ const TopUp = () => {
           const enableWaffoTopUp = data.enable_waffo_topup || false;
           const enableWaffoPancakeTopUp =
             data.enable_waffo_pancake_topup || false;
+          const enableAxoneTopUp = data.enable_axone_topup || false;
           const minTopUpValue = enableOnlineTopUp
             ? data.min_topup
             : enableAlipayTopUp
@@ -714,6 +723,13 @@ const TopUp = () => {
           setWaffoMinTopUp(data.waffo_min_topup || 1);
           setEnableWaffoPancakeTopUp(enableWaffoPancakeTopUp);
           setWaffoPancakeMinTopUp(data.waffo_pancake_min_topup || 1);
+          setEnableAxoneTopUp(enableAxoneTopUp);
+          const currencies = Array.isArray(data.axone_currencies)
+            ? data.axone_currencies
+            : [];
+          setAxoneCurrencies(currencies);
+          setSelectedAxoneCurrency((prev) => prev || currencies[0] || '');
+          setAxoneAddress('');
           setMinTopUp(minTopUpValue);
           setTopUpCount(minTopUpValue);
           setTopUpLink(data.topup_link || '');
@@ -811,6 +827,65 @@ const TopUp = () => {
     showSuccess(t('邀请链接已复制到剪切板'));
   };
 
+  const getAxoneChains = async () => {
+    setAxoneChainLoading(true);
+    try {
+      const res = await API.get('/api/user/axone/chains');
+      const { success, message, data } = res.data;
+      if (success && Array.isArray(data)) {
+        setAxoneChains(data);
+        return data;
+      }
+      showError(message || t('获取 AXOne 链列表失败'));
+      return [];
+    } catch (error) {
+      showError(t('获取 AXOne 链列表失败'));
+      return [];
+    } finally {
+      setAxoneChainLoading(false);
+    }
+  };
+
+  const generateAxoneAddress = async () => {
+    if (!selectedAxoneCurrency) {
+      showError(t('请选择币种'));
+      return;
+    }
+    if (!selectedAxoneChain) {
+      showError(t('请选择链'));
+      return;
+    }
+    setAxoneAddressLoading(true);
+    try {
+      const res = await API.post('/api/user/axone/address', {
+        currency: selectedAxoneCurrency,
+        chain_id: selectedAxoneChain,
+      });
+      const { success, message, data } = res.data;
+      if (success && data?.address) {
+        setAxoneAddress(data.address);
+        showSuccess(t('钱包地址已生成'));
+        return;
+      }
+      showError(message || data || t('生成钱包地址失败'));
+    } catch (error) {
+      showError(t('生成钱包地址失败'));
+    } finally {
+      setAxoneAddressLoading(false);
+    }
+  };
+
+  const handleCopyAxoneAddress = async () => {
+    if (!axoneAddress) {
+      return;
+    }
+    if (await copy(axoneAddress)) {
+      showSuccess(t('钱包地址已复制到剪贴板'));
+    } else {
+      showError(t('复制失败'));
+    }
+  };
+
   // URL 参数自动打开账单弹窗（支付回跳时触发）
   useEffect(() => {
     if (searchParams.get('show_history') === 'true') {
@@ -849,6 +924,24 @@ const TopUp = () => {
       setStatusLoading(false);
     }
   }, [statusState?.status]);
+
+  useEffect(() => {
+    if (enableAxoneTopUp) {
+      getAxoneChains().then((chains) => {
+        if (Array.isArray(chains) && chains.length > 0) {
+          setSelectedAxoneChain((prev) => prev || chains[0].chain_id || '');
+        }
+      });
+    } else {
+      setAxoneChains([]);
+      setSelectedAxoneChain('');
+      setAxoneAddress('');
+    }
+  }, [enableAxoneTopUp]);
+
+  useEffect(() => {
+    setAxoneAddress('');
+  }, [selectedAxoneCurrency, selectedAxoneChain]);
 
   const renderAmount = () => {
     return amount + ' ' + t('元');
@@ -1058,6 +1151,19 @@ const TopUp = () => {
           creemPreTopUp={creemPreTopUp}
           enableWaffoTopUp={enableWaffoTopUp}
           enableWaffoPancakeTopUp={enableWaffoPancakeTopUp}
+          enableAxoneTopUp={enableAxoneTopUp}
+          axoneCurrencies={axoneCurrencies}
+          selectedAxoneCurrency={selectedAxoneCurrency}
+          setSelectedAxoneCurrency={setSelectedAxoneCurrency}
+          axoneChains={axoneChains}
+          selectedAxoneChain={selectedAxoneChain}
+          setSelectedAxoneChain={setSelectedAxoneChain}
+          axoneAddress={axoneAddress}
+          axoneChainLoading={axoneChainLoading}
+          axoneAddressLoading={axoneAddressLoading}
+          getAxoneChains={getAxoneChains}
+          generateAxoneAddress={generateAxoneAddress}
+          handleCopyAxoneAddress={handleCopyAxoneAddress}
           presetAmounts={presetAmounts}
           selectedPreset={selectedPreset}
           selectPresetAmount={selectPresetAmount}

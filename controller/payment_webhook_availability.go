@@ -111,11 +111,19 @@ func isWaffoPancakeWebhookEnabled() bool {
 	return isWaffoPancakeTopUpEnabled()
 }
 
-func isEpayTopUpEnabled() bool {
+func isAxoneTopUpEnabled() bool {
 	if !isPaymentComplianceConfirmed() {
 		return false
 	}
-	return isEpayWebhookConfigured() && len(operation_setting.PayMethods) > 0
+	return setting.AxoneEnabled &&
+		strings.TrimSpace(setting.AxoneBaseURL) != "" &&
+		strings.TrimSpace(setting.AxoneAccount) != "" &&
+		strings.TrimSpace(setting.AxonePassword) != "" &&
+		len(setting.GetAxoneCurrencies()) > 0
+}
+
+func isEpayTopUpEnabled() bool {
+	return isPaymentComplianceConfirmed()
 }
 
 func isEpayWebhookConfigured() bool {

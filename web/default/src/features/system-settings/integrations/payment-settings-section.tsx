@@ -57,6 +57,10 @@ import { SettingsSection } from '../components/settings-section'
 import { useUpdateOption } from '../hooks/use-update-option'
 import { AmountDiscountVisualEditor } from './amount-discount-visual-editor'
 import { AmountOptionsVisualEditor } from './amount-options-visual-editor'
+import {
+  AxoneSettingsSection,
+  type AxoneSettingsValues,
+} from './axone-settings-section'
 import { CreemProductsVisualEditor } from './creem-products-visual-editor'
 import { PaymentMethodsVisualEditor } from './payment-methods-visual-editor'
 import {
@@ -169,6 +173,7 @@ type PaymentComplianceDefaults = {
 
 type PaymentSettingsSectionProps = {
   defaultValues: PaymentFormValues
+  axoneDefaultValues: AxoneSettingsValues
   waffoDefaultValues: WaffoSettingsValues
   waffoPancakeDefaultValues: WaffoPancakeSettingsValues
   waffoPancakeProvisionedStoreID?: string
@@ -178,6 +183,7 @@ type PaymentSettingsSectionProps = {
 
 export function PaymentSettingsSection({
   defaultValues,
+  axoneDefaultValues,
   waffoDefaultValues,
   waffoPancakeDefaultValues,
   waffoPancakeProvisionedStoreID,
@@ -1509,6 +1515,10 @@ export function PaymentSettingsSection({
           </div>
         </SettingsForm>
       </Form>
+
+      <Separator />
+
+      <AxoneSettingsSection defaultValues={axoneDefaultValues} />
 
       <Separator />
 

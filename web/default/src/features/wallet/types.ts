@@ -61,6 +61,9 @@ export type WaffoPancakePaymentResponse = ApiResponse<
   | string
 >
 
+export type AxoneChainsResponse = ApiResponse<AxoneChain[]>
+export type AxoneAddressResponse = ApiResponse<AxoneAddressData>
+
 /**
  * Creem product configuration
  */
@@ -117,6 +120,23 @@ export interface WaffoPayMethod {
   payMethodName?: string
 }
 
+export interface AxoneChain {
+  chain_id: string
+  chain_name: string
+  symbol: string
+}
+
+export interface AxoneAddressRequest {
+  currency: string
+  chain_id: string
+}
+
+export interface AxoneAddressData {
+  currency: string
+  chain_id: string
+  address: string
+}
+
 /**
  * Topup configuration information
  */
@@ -155,6 +175,10 @@ export interface TopupInfo {
   enable_waffo_pancake_topup?: boolean
   /** Minimum topup amount for Waffo Pancake */
   waffo_pancake_min_topup?: number
+  /** Whether AXOne stablecoin topup is enabled */
+  enable_axone_topup?: boolean
+  /** Configured AXOne currencies */
+  axone_currencies?: string[]
   /** Whether redemption code usage is enabled */
   enable_redemption?: boolean
   /** Whether compliance confirmation has been completed */

@@ -249,6 +249,11 @@ export type BillingSettings = {
   CreemWebhookSecret: string
   CreemTestMode: boolean
   CreemProducts: string
+  AxoneEnabled: boolean
+  AxoneBaseURL: string
+  AxoneAccount: string
+  AxonePassword: string
+  AxoneCurrencies: string
   WaffoEnabled: boolean
   WaffoApiKey: string
   WaffoPrivateKey: string
