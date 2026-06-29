@@ -1693,6 +1693,8 @@
     "支付请求失败": "支付請求失敗",
     "支付返回地址": "支付返回位址",
     "支付金额": "支付金額",
+    "手续费": "手續費",
+    "总支付金额": "總支付金額",
     "支持 Ctrl+V 粘贴图片": "支援 Ctrl+V 貼上圖片",
     "支持 JSONPath，如 email, data.user.email": "支援 JSONPath，如 email, data.user.email",
     "支持 JSONPath，如 name, display_name, data.user.name": "支援 JSONPath，如 name, display_name, data.user.name",

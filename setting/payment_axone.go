@@ -7,6 +7,14 @@ var AxoneBaseURL = ""
 var AxoneAccount = ""
 var AxonePassword = ""
 var AxoneCurrencies = "USDT,USDC"
+var AxoneFeePercent = 0.0
+
+func GetAxoneFeePercent() float64 {
+	if AxoneFeePercent < 0 {
+		return 0
+	}
+	return AxoneFeePercent
+}
 
 func GetAxoneCurrencies() []string {
 	rawItems := strings.Split(AxoneCurrencies, ",")

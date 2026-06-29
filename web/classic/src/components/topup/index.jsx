@@ -101,6 +101,11 @@ const TopUp = () => {
   const [selectedAxoneCurrency, setSelectedAxoneCurrency] = useState('');
   const [selectedAxoneChain, setSelectedAxoneChain] = useState('');
   const [axoneAddress, setAxoneAddress] = useState('');
+  const [axoneTradeNo, setAxoneTradeNo] = useState('');
+  const [axoneBasePaymentMoney, setAxoneBasePaymentMoney] = useState('');
+  const [axoneFee, setAxoneFee] = useState('');
+  const [axonePaymentMoney, setAxonePaymentMoney] = useState('');
+  const [axoneExpireAt, setAxoneExpireAt] = useState(0);
   const [axoneChainLoading, setAxoneChainLoading] = useState(false);
   const [axoneAddressLoading, setAxoneAddressLoading] = useState(false);
 
@@ -858,18 +863,24 @@ const TopUp = () => {
     setAxoneAddressLoading(true);
     try {
       const res = await API.post('/api/user/axone/address', {
+        amount: parseInt(topUpCount, 10),
         currency: selectedAxoneCurrency,
         chain_id: selectedAxoneChain,
       });
       const { success, message, data } = res.data;
       if (success && data?.address) {
         setAxoneAddress(data.address);
-        showSuccess(t('钱包地址已生成'));
+        setAxoneTradeNo(data.trade_no || '');
+        setAxoneBasePaymentMoney(data.base_payment_money || '');
+        setAxoneFee(data.fee || '');
+        setAxonePaymentMoney(data.payment_money || '');
+        setAxoneExpireAt(Number(data.expires_at) || 0);
+        showSuccess(t('支付订单已生成'));
         return;
       }
-      showError(message || data || t('生成钱包地址失败'));
+      showError(message || data || t('生成支付订单失败'));
     } catch (error) {
-      showError(t('生成钱包地址失败'));
+      showError(t('生成支付订单失败'));
     } finally {
       setAxoneAddressLoading(false);
     }
@@ -941,6 +952,11 @@ const TopUp = () => {
 
   useEffect(() => {
     setAxoneAddress('');
+    setAxoneTradeNo('');
+    setAxoneBasePaymentMoney('');
+    setAxoneFee('');
+    setAxonePaymentMoney('');
+    setAxoneExpireAt(0);
   }, [selectedAxoneCurrency, selectedAxoneChain]);
 
   const renderAmount = () => {
@@ -1159,6 +1175,11 @@ const TopUp = () => {
           selectedAxoneChain={selectedAxoneChain}
           setSelectedAxoneChain={setSelectedAxoneChain}
           axoneAddress={axoneAddress}
+          axoneTradeNo={axoneTradeNo}
+          axoneBasePaymentMoney={axoneBasePaymentMoney}
+          axoneFee={axoneFee}
+          axonePaymentMoney={axonePaymentMoney}
+          axoneExpireAt={axoneExpireAt}
           axoneChainLoading={axoneChainLoading}
           axoneAddressLoading={axoneAddressLoading}
           getAxoneChains={getAxoneChains}
@@ -1177,6 +1198,7 @@ const TopUp = () => {
           setSelectedPreset={setSelectedPreset}
           renderAmount={renderAmount}
           amountLoading={amountLoading}
+          amountNumber={amount}
           payMethods={confirmPayMethods}
           preTopUp={preTopUp}
           paymentLoading={paymentLoading}

@@ -166,6 +166,7 @@ const BILLING_SECTIONS = [
           AxoneAccount: settings.AxoneAccount ?? '',
           AxonePassword: settings.AxonePassword ?? '',
           AxoneCurrencies: settings.AxoneCurrencies ?? 'USDT,USDC',
+          AxoneFeePercent: settings.AxoneFeePercent ?? 0,
         }}
         waffoDefaultValues={{
           WaffoEnabled: settings.WaffoEnabled ?? false,

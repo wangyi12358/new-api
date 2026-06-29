@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Search, Copy, Check, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { formatCurrencyFromUSD } from '@/lib/currency'
@@ -89,6 +89,12 @@ export function BillingHistoryDialog({
   const { copyToClipboard, copiedText } = useCopyToClipboard({ notify: false })
 
   const totalPages = Math.ceil(total / pageSize)
+
+  useEffect(() => {
+    if (open) {
+      void refresh()
+    }
+  }, [open, refresh])
 
   const handleConfirmComplete = async () => {
     if (confirmTradeNo) {
@@ -259,6 +265,42 @@ export function BillingHistoryDialog({
                               {formatNumber(record.money)}
                             </div>
                           </div>
+                          {record.payment_provider === 'axone' && (
+                            <>
+                              <div className='space-y-1'>
+                                <Label className='text-muted-foreground text-xs'>
+                                  {t('Currency')}
+                                </Label>
+                                <div className='text-sm font-medium'>
+                                  {record.axone_currency || '-'}
+                                </div>
+                              </div>
+                              <div className='space-y-1'>
+                                <Label className='text-muted-foreground text-xs'>
+                                  {t('Chain')}
+                                </Label>
+                                <div className='text-sm font-medium'>
+                                  {record.axone_chain_id || '-'}
+                                </div>
+                              </div>
+                              <div className='space-y-1'>
+                                <Label className='text-muted-foreground text-xs'>
+                                  {t('Fee Amount')}
+                                </Label>
+                                <div className='text-sm font-medium'>
+                                  {formatNumber(record.fee || 0)}
+                                </div>
+                              </div>
+                              <div className='space-y-1 sm:col-span-2'>
+                                <Label className='text-muted-foreground text-xs'>
+                                  {t('Wallet Address')}
+                                </Label>
+                                <div className='font-mono text-xs break-all'>
+                                  {record.axone_address || '-'}
+                                </div>
+                              </div>
+                            </>
+                          )}
                         </div>
 
                         {/* Admin Actions */}

@@ -45,6 +45,10 @@ export const STATUS_CONFIG: Record<TopupStatus, StatusConfig> = {
     variant: 'danger',
     label: 'Expired',
   },
+  failed: {
+    variant: 'danger',
+    label: 'Failed',
+  },
 }
 
 /**
@@ -58,10 +62,12 @@ export function getStatusConfig(status: TopupStatus): StatusConfig {
  * Payment method display names
  */
 export const PAYMENT_METHOD_NAMES: Record<string, string> = {
+  axone: 'AXOne Stablecoin',
   stripe: 'Stripe',
   alipay: 'Alipay',
   wxpay: 'WeChat Pay',
   waffo: 'Waffo',
+  creem: 'Creem',
 }
 
 /**

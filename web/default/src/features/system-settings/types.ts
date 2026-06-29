@@ -254,6 +254,7 @@ export type BillingSettings = {
   AxoneAccount: string
   AxonePassword: string
   AxoneCurrencies: string
+  AxoneFeePercent: number
   WaffoEnabled: boolean
   WaffoApiKey: string
   WaffoPrivateKey: string

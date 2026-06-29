@@ -1694,6 +1694,8 @@
     "支付请求失败": "Yêu cầu thanh toán thất bại",
     "支付返回地址": "URL trả về",
     "支付金额": "Số tiền thanh toán",
+    "手续费": "Phí",
+    "总支付金额": "Tổng số tiền thanh toán",
     "支持 Ctrl+V 粘贴图片": "Hỗ trợ Ctrl+V để dán hình ảnh",
     "支持6位TOTP验证码或8位备用码，可到`个人设置-安全设置-两步验证设置`配置或查看。": "Hỗ trợ mã xác minh TOTP 6 chữ số hoặc mã dự phòng 8 chữ số, có thể được cấu hình hoặc xem trong `Cài đặt cá nhân - Cài đặt bảo mật - Cài đặt xác thực hai yếu tố`.",
     "支持CIDR格式，如：8.8.8.8, 192.168.1.0/24": "Hỗ trợ định dạng CIDR, ví dụ: 8.8.8.8, 192.168.1.0/24",

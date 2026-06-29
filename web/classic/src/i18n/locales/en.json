@@ -1723,6 +1723,8 @@
     "支付跳转地址不安全": "Unsafe payment redirect URL",
     "支付返回地址": "Return URL",
     "支付金额": "Payment Amount",
+    "手续费": "Fee",
+    "总支付金额": "Total Payment Amount",
     "支持 Ctrl+V 粘贴图片": "Supports Ctrl+V to paste images",
     "支持 JSONPath，如 email, data.user.email": "Supports JSONPath, e.g. email, data.user.email",
     "支持 JSONPath，如 name, display_name, data.user.name": "Supports JSONPath, e.g. name, display_name, data.user.name",

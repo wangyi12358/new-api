@@ -36,6 +36,7 @@ export default function SettingsPaymentGatewayAxone(props) {
     AxoneAccount: '',
     AxonePassword: '',
     AxoneCurrencies: 'USDT,USDC',
+    AxoneFeePercent: 0,
   });
   const formApiRef = useRef(null);
 
@@ -47,6 +48,7 @@ export default function SettingsPaymentGatewayAxone(props) {
         AxoneAccount: props.options.AxoneAccount || '',
         AxonePassword: props.options.AxonePassword || '',
         AxoneCurrencies: props.options.AxoneCurrencies || 'USDT,USDC',
+        AxoneFeePercent: Number(props.options.AxoneFeePercent) || 0,
       };
       setInputs(currentInputs);
       formApiRef.current.setValues(currentInputs);
@@ -80,6 +82,10 @@ export default function SettingsPaymentGatewayAxone(props) {
         {
           key: 'AxoneCurrencies',
           value: (inputs.AxoneCurrencies || '').trim(),
+        },
+        {
+          key: 'AxoneFeePercent',
+          value: String(Math.max(0, Number(inputs.AxoneFeePercent) || 0)),
         },
       ];
 
@@ -119,7 +125,7 @@ export default function SettingsPaymentGatewayAxone(props) {
           icon={<Coins size={16} />}
           title={t('AXOne 稳定币钱包')}
           description={t(
-            '配置 AXOne 钱包账号后，用户可在 classic 钱包页选择币种与链，并生成托管钱包地址进行稳定币充值。',
+            '配置 AXOne 钱包账号后，用户可在 classic 钱包页选择币种与链，并生成支付订单进行稳定币充值。',
           )}
           closeIcon={null}
           style={{ marginBottom: 16 }}
@@ -174,6 +180,18 @@ export default function SettingsPaymentGatewayAxone(props) {
                 extraText={t(
                   '用英文逗号分隔用户可选的币种，例如：USDT,USDC',
                 )}
+              />
+            </Col>
+
+            <Col span={24}>
+              <Form.InputNumber
+                field='AxoneFeePercent'
+                label={t('手续费百分比')}
+                min={0}
+                step={0.01}
+                precision={2}
+                placeholder='0'
+                extraText={t('用户稳定币转账金额会按该百分比增加，例如 1 表示 1% 手续费')}
               />
             </Col>
 

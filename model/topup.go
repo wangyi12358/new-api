@@ -16,15 +16,23 @@ type TopUp struct {
 	UserId          int     `json:"user_id" gorm:"index"`
 	Amount          int64   `json:"amount"`
 	Money           float64 `json:"money"`
+	Fee             float64 `json:"fee"`
 	TradeNo         string  `json:"trade_no" gorm:"unique;type:varchar(255);index"`
 	PaymentMethod   string  `json:"payment_method" gorm:"type:varchar(50)"`
 	PaymentProvider string  `json:"payment_provider" gorm:"type:varchar(50);default:''"`
+	AxoneCurrency   string  `json:"axone_currency" gorm:"type:varchar(20);index"`
+	AxoneChainID    string  `json:"axone_chain_id" gorm:"type:varchar(100);index"`
+	AxoneAddress    string  `json:"axone_address" gorm:"type:varchar(255)"`
+	ExpireTime      int64   `json:"expire_time" gorm:"index"`
+	TxHash          string  `json:"tx_hash" gorm:"type:varchar(255)"`
+	ProviderPayload string  `json:"provider_payload" gorm:"type:text"`
 	CreateTime      int64   `json:"create_time"`
 	CompleteTime    int64   `json:"complete_time"`
 	Status          string  `json:"status"`
 }
 
 const (
+	PaymentMethodAxone        = "axone"
 	PaymentMethodAlipay       = "alipay"
 	PaymentMethodStripe       = "stripe"
 	PaymentMethodCreem        = "creem"
@@ -33,6 +41,7 @@ const (
 )
 
 const (
+	PaymentProviderAxone        = "axone"
 	PaymentProviderAlipay       = "alipay"
 	PaymentProviderEpay         = "epay"
 	PaymentProviderStripe       = "stripe"
@@ -104,6 +113,39 @@ func UpdatePendingTopUpStatus(tradeNo string, expectedPaymentProvider string, ta
 		topUp.Status = targetStatus
 		return tx.Save(topUp).Error
 	})
+}
+
+func ExpirePendingAxoneTopUps(targetTime int64) error {
+	return DB.Model(&TopUp{}).
+		Where("payment_provider = ? AND status = ? AND expire_time > 0 AND expire_time <= ?",
+			PaymentProviderAxone, common.TopUpStatusPending, targetTime).
+		Update("status", common.TopUpStatusExpired).Error
+}
+
+func ExpireUserPendingAxoneTopUps(userId int, targetTime int64) error {
+	return DB.Model(&TopUp{}).
+		Where("user_id = ? AND payment_provider = ? AND status = ? AND expire_time > ?",
+			userId, PaymentProviderAxone, common.TopUpStatusPending, targetTime).
+		Updates(map[string]any{
+			"status":      common.TopUpStatusExpired,
+			"expire_time": targetTime,
+		}).Error
+}
+
+func IsActiveAxoneTopUpMoneyInUse(currency string, chainID string, money float64, targetTime int64) (bool, error) {
+	var count int64
+	err := DB.Model(&TopUp{}).
+		Where("payment_provider = ? AND status = ? AND axone_currency = ? AND axone_chain_id = ? AND expire_time > ? AND money >= ? AND money < ?",
+			PaymentProviderAxone,
+			common.TopUpStatusPending,
+			currency,
+			chainID,
+			targetTime,
+			money-0.0000001,
+			money+0.0000001,
+		).
+		Count(&count).Error
+	return count > 0, err
 }
 
 func Recharge(referenceId string, customerId string, callerIp string) (err error) {

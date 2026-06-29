@@ -49,6 +49,7 @@ const STATUS_CONFIG = {
 
 // 支付方式映射
 const PAYMENT_METHOD_MAP = {
+  axone: 'AXOne 稳定币',
   stripe: 'Stripe',
   creem: 'Creem',
   waffo: 'Waffo',
@@ -208,6 +209,17 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
         dataIndex: 'money',
         key: 'money',
         render: (money) => <Text type='danger'>¥{money.toFixed(2)}</Text>,
+      },
+      {
+        title: t('手续费'),
+        dataIndex: 'fee',
+        key: 'fee',
+        render: (fee, record) =>
+          record.payment_provider === 'axone' ? (
+            <Text>{Number(fee || 0).toFixed(4)}</Text>
+          ) : (
+            <Text type='tertiary'>-</Text>
+          ),
       },
       {
         title: t('状态'),

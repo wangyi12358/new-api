@@ -34,6 +34,7 @@ export interface AxoneSettingsValues {
   AxoneAccount: string
   AxonePassword: string
   AxoneCurrencies: string
+  AxoneFeePercent: number
 }
 
 interface Props {
@@ -66,6 +67,10 @@ export function AxoneSettingsSection({ defaultValues }: Props) {
         { key: 'AxoneAccount', value: values.AxoneAccount.trim() },
         { key: 'AxonePassword', value: values.AxonePassword },
         { key: 'AxoneCurrencies', value: values.AxoneCurrencies.trim() },
+        {
+          key: 'AxoneFeePercent',
+          value: String(Math.max(0, Number(values.AxoneFeePercent) || 0)),
+        },
       ]
 
       for (const option of options) {
@@ -150,6 +155,23 @@ export function AxoneSettingsSection({ defaultValues }: Props) {
           <p className='text-muted-foreground text-xs'>
             {t(
               'Comma-separated currency codes shown in the wallet, for example: USDT,USDC'
+            )}
+          </p>
+        </div>
+
+        <div className='grid gap-1.5 sm:col-span-2'>
+          <Label htmlFor='axone-fee-percent'>{t('Top-up Fee Percent')}</Label>
+          <Input
+            id='axone-fee-percent'
+            type='number'
+            min='0'
+            step='0.01'
+            placeholder='0'
+            {...form.register('AxoneFeePercent', { valueAsNumber: true })}
+          />
+          <p className='text-muted-foreground text-xs'>
+            {t(
+              'Percentage fee added to the stablecoin transfer amount. For example, 1 means 1%.'
             )}
           </p>
         </div>

@@ -53,22 +53,23 @@ export function useAxoneTopup(enabled: boolean) {
   }, [enabled])
 
   const generateAddress = useCallback(
-    async (currency: string, chainID: string) => {
+    async (amount: number, currency: string, chainID: string) => {
       setGenerating(true)
       try {
         const response = await requestAxoneAddress({
+          amount,
           currency,
           chain_id: chainID,
         })
         if (isApiSuccess(response) && response.data) {
           setAddressData(response.data)
-          toast.success(i18next.t('Wallet address generated'))
+          toast.success(i18next.t('Payment order generated'))
           return response.data
         }
         toast.error(getErrorMessage(response.message, response.data))
         return null
       } catch {
-        toast.error(i18next.t('Failed to generate wallet address'))
+        toast.error(i18next.t('Failed to generate payment order'))
         return null
       } finally {
         setGenerating(false)

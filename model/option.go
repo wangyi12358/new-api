@@ -104,6 +104,7 @@ func InitOptionMap() {
 	common.OptionMap["AxoneAccount"] = setting.AxoneAccount
 	common.OptionMap["AxonePassword"] = setting.AxonePassword
 	common.OptionMap["AxoneCurrencies"] = setting.AxoneCurrencies
+	common.OptionMap["AxoneFeePercent"] = strconv.FormatFloat(setting.GetAxoneFeePercent(), 'f', -1, 64)
 	common.OptionMap["WaffoEnabled"] = strconv.FormatBool(setting.WaffoEnabled)
 	common.OptionMap["WaffoApiKey"] = setting.WaffoApiKey
 	common.OptionMap["WaffoPrivateKey"] = setting.WaffoPrivateKey
@@ -457,6 +458,8 @@ func updateOptionMap(key string, value string) (err error) {
 		setting.AxonePassword = value
 	case "AxoneCurrencies":
 		setting.AxoneCurrencies = value
+	case "AxoneFeePercent":
+		setting.AxoneFeePercent, _ = strconv.ParseFloat(strings.TrimSuffix(strings.TrimSpace(value), "%"), 64)
 	case "WaffoEnabled":
 		setting.WaffoEnabled = value == "true"
 	case "WaffoApiKey":

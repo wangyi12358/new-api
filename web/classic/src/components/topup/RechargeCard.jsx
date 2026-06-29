@@ -17,7 +17,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import {
   Avatar,
   Typography,
@@ -31,9 +32,11 @@ import {
   Col,
   Spin,
   Tooltip,
+  Select,
   Tag,
   Tabs,
   TabPane,
+  Modal,
 } from '@douyinfe/semi-ui';
 import { SiAlipay, SiWechat, SiStripe } from 'react-icons/si';
 import {
@@ -69,6 +72,11 @@ const RechargeCard = ({
   selectedAxoneChain,
   setSelectedAxoneChain,
   axoneAddress,
+  axoneTradeNo,
+  axoneBasePaymentMoney,
+  axoneFee,
+  axonePaymentMoney,
+  axoneExpireAt,
   axoneChainLoading,
   axoneAddressLoading,
   getAxoneChains,
@@ -87,6 +95,7 @@ const RechargeCard = ({
   setSelectedPreset,
   renderAmount,
   amountLoading,
+  amountNumber = 0,
   payMethods,
   preTopUp,
   paymentLoading,
@@ -119,9 +128,49 @@ const RechargeCard = ({
   const showAmountSkeleton = useMinimumLoadingTime(amountLoading);
   const actualTheme = useActualTheme();
   const [activeTab, setActiveTab] = useState('topup');
+  const [axoneModalOpen, setAxoneModalOpen] = useState(false);
   const shouldShowSubscription =
     !subscriptionLoading && subscriptionPlans.length > 0;
   const regularPayMethods = payMethods || [];
+
+  const axoneTransferAmount = useMemo(() => {
+    if (!amountNumber || amountNumber <= 0) {
+      return '0.00';
+    }
+    let usdRate = 7;
+    try {
+      const statusStr = localStorage.getItem('status');
+      if (statusStr) {
+        const s = JSON.parse(statusStr);
+        usdRate = s?.usd_exchange_rate || 7;
+      }
+    } catch (e) {}
+    return (amountNumber / usdRate).toFixed(2);
+  }, [amountNumber]);
+
+  const selectedAxoneChainInfo = useMemo(
+    () =>
+      (axoneChains || []).find((chain) => chain.chain_id === selectedAxoneChain),
+    [axoneChains, selectedAxoneChain],
+  );
+
+  const selectedAxoneChainLabel = selectedAxoneChainInfo
+    ? `${selectedAxoneChainInfo.chain_name} (${selectedAxoneChainInfo.symbol})`
+    : selectedAxoneChain;
+  const formatAxoneExpireTime = (timestamp) => {
+    if (!timestamp) {
+      return '';
+    }
+    const date = new Date(timestamp * 1000);
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+    return date.toLocaleString();
+  };
+  const axoneExpireText =
+    axoneExpireAt && axoneExpireAt > 0
+      ? formatAxoneExpireTime(axoneExpireAt)
+      : '';
 
   useEffect(() => {
     if (initialTabSetRef.current) return;
@@ -327,107 +376,135 @@ const RechargeCard = ({
                   {regularPayMethods.length > 0 && (
                     <Col xs={24} sm={24} md={24} lg={14} xl={14}>
                       <Form.Slot label={t('选择支付方式')}>
-                        <Space wrap>
-                          {regularPayMethods.map((payMethod) => {
-                            const minTopupVal =
-                              Number(payMethod.min_topup) || 0;
-                            const isAlipayGateway =
-                              payMethod.type === 'alipay_gateway';
-                            const isStripe = payMethod.type === 'stripe';
-                            const isWaffo =
-                              typeof payMethod.type === 'string' &&
-                              payMethod.type.startsWith('waffo:');
-                            const isWaffoPancake =
-                              payMethod.type === 'waffo_pancake';
-                            const disabled =
-                              (!enableOnlineTopUp &&
-                                !isAlipayGateway &&
-                                !isStripe &&
-                                !isWaffo &&
-                                !isWaffoPancake) ||
-                              (!enableAlipayTopUp && isAlipayGateway) ||
-                              (!enableStripeTopUp && isStripe) ||
-                              (!enableWaffoTopUp && isWaffo) ||
-                              (!enableWaffoPancakeTopUp && isWaffoPancake) ||
-                              minTopupVal > Number(topUpCount || 0);
+                        <Space vertical align='start'>
+                          <Space wrap>
+                            {regularPayMethods.map((payMethod) => {
+                              const minTopupVal =
+                                Number(payMethod.min_topup) || 0;
+                              const isAlipayGateway =
+                                payMethod.type === 'alipay_gateway';
+                              const isStripe = payMethod.type === 'stripe';
+                              const isWaffo =
+                                typeof payMethod.type === 'string' &&
+                                payMethod.type.startsWith('waffo:');
+                              const isWaffoPancake =
+                                payMethod.type === 'waffo_pancake';
+                              const disabled =
+                                (!enableOnlineTopUp &&
+                                  !isAlipayGateway &&
+                                  !isStripe &&
+                                  !isWaffo &&
+                                  !isWaffoPancake) ||
+                                (!enableAlipayTopUp && isAlipayGateway) ||
+                                (!enableStripeTopUp && isStripe) ||
+                                (!enableWaffoTopUp && isWaffo) ||
+                                (!enableWaffoPancakeTopUp && isWaffoPancake) ||
+                                minTopupVal > Number(topUpCount || 0);
 
-                            const buttonEl = (
-                              <Button
-                                key={payMethod.type}
-                                theme='outline'
-                                type='tertiary'
-                                onClick={() => preTopUp(payMethod.type)}
-                                disabled={disabled}
-                                loading={
-                                  paymentLoading && payWay === payMethod.type
-                                }
-                                icon={
-                                  payMethod.type === 'alipay' ||
-                                  payMethod.type === 'alipay_gateway' ? (
-                                    <SiAlipay size={18} color='#1677FF' />
-                                  ) : payMethod.type === 'wxpay' ? (
-                                    <SiWechat size={18} color='#07C160' />
-                                  ) : payMethod.type === 'stripe' ? (
-                                    <SiStripe size={18} color='#635BFF' />
-                                  ) : payMethod.icon ? (
-                                    <img
-                                      src={payMethod.icon}
-                                      alt={payMethod.name}
-                                      style={{
-                                        width: 18,
-                                        height: 18,
-                                        objectFit: 'contain',
-                                      }}
-                                    />
-                                  ) : payMethod.type === 'waffo_pancake' ? (
-                                    <img
-                                      src={
-                                        actualTheme === 'dark'
-                                          ? '/waffo-logo-dark.svg'
-                                          : '/waffo-logo-light.svg'
-                                      }
-                                      alt='Waffo'
-                                      style={{
-                                        width: 18,
-                                        height: 18,
-                                        objectFit: 'contain',
-                                      }}
-                                    />
-                                  ) : (
-                                    <CreditCard
-                                      size={18}
-                                      color={
-                                        payMethod.color ||
-                                        'var(--semi-color-text-2)'
-                                      }
-                                    />
-                                  )
-                                }
-                                className='!rounded-lg !px-4 !py-2'
-                              >
-                                {payMethod.name}
-                              </Button>
-                            );
+                              const buttonEl = (
+                                <Button
+                                  key={payMethod.type}
+                                  theme='outline'
+                                  type='tertiary'
+                                  onClick={() => preTopUp(payMethod.type)}
+                                  disabled={disabled}
+                                  loading={
+                                    paymentLoading && payWay === payMethod.type
+                                  }
+                                  icon={
+                                    payMethod.type === 'alipay' ||
+                                    payMethod.type === 'alipay_gateway' ? (
+                                      <SiAlipay size={18} color='#1677FF' />
+                                    ) : payMethod.type === 'wxpay' ? (
+                                      <SiWechat size={18} color='#07C160' />
+                                    ) : payMethod.type === 'stripe' ? (
+                                      <SiStripe size={18} color='#635BFF' />
+                                    ) : payMethod.icon ? (
+                                      <img
+                                        src={payMethod.icon}
+                                        alt={payMethod.name}
+                                        style={{
+                                          width: 18,
+                                          height: 18,
+                                          objectFit: 'contain',
+                                        }}
+                                      />
+                                    ) : payMethod.type === 'waffo_pancake' ? (
+                                      <img
+                                        src={
+                                          actualTheme === 'dark'
+                                            ? '/waffo-logo-dark.svg'
+                                            : '/waffo-logo-light.svg'
+                                        }
+                                        alt='Waffo'
+                                        style={{
+                                          width: 18,
+                                          height: 18,
+                                          objectFit: 'contain',
+                                        }}
+                                      />
+                                    ) : (
+                                      <CreditCard
+                                        size={18}
+                                        color={
+                                          payMethod.color ||
+                                          'var(--semi-color-text-2)'
+                                        }
+                                      />
+                                    )
+                                  }
+                                  className='!rounded-lg !px-4 !py-2'
+                                >
+                                  {payMethod.name}
+                                </Button>
+                              );
 
-                            return disabled &&
-                              minTopupVal > Number(topUpCount || 0) ? (
-                              <Tooltip
-                                content={
-                                  t('此支付方式最低充值金额为') +
-                                  ' ' +
-                                  minTopupVal
-                                }
-                                key={payMethod.type}
-                              >
-                                {buttonEl}
-                              </Tooltip>
-                            ) : (
-                              <React.Fragment key={payMethod.type}>
-                                {buttonEl}
-                              </React.Fragment>
-                            );
-                          })}
+                              return disabled &&
+                                minTopupVal > Number(topUpCount || 0) ? (
+                                <Tooltip
+                                  content={
+                                    t('此支付方式最低充值金额为') +
+                                    ' ' +
+                                    minTopupVal
+                                  }
+                                  key={payMethod.type}
+                                >
+                                  {buttonEl}
+                                </Tooltip>
+                              ) : (
+                                <React.Fragment key={payMethod.type}>
+                                  {buttonEl}
+                                </React.Fragment>
+                              );
+                            })}
+                          </Space>
+                          {enableAxoneTopUp && (
+                            <Button
+                              theme='outline'
+                              type='tertiary'
+                              icon={<Coins size={18} />}
+                              onClick={() => setAxoneModalOpen(true)}
+                              className='!rounded-lg !px-4 !py-2'
+                            >
+                              {t('稳定币支付')}
+                            </Button>
+                          )}
                         </Space>
+                      </Form.Slot>
+                    </Col>
+                  )}
+                  {regularPayMethods.length === 0 && enableAxoneTopUp && (
+                    <Col xs={24} sm={24} md={24} lg={14} xl={14}>
+                      <Form.Slot label={t('选择支付方式')}>
+                        <Button
+                          theme='outline'
+                          type='tertiary'
+                          icon={<Coins size={18} />}
+                          onClick={() => setAxoneModalOpen(true)}
+                          className='!rounded-lg !px-4 !py-2'
+                        >
+                          {t('稳定币支付')}
+                        </Button>
                       </Form.Slot>
                     </Col>
                   )}
@@ -590,98 +667,6 @@ const RechargeCard = ({
                 </Form.Slot>
               )}
 
-              {enableAxoneTopUp && (
-                <Form.Slot label={t('稳定币充值')}>
-                  <Space vertical align='start' style={{ width: '100%' }}>
-                    <Banner
-                      type='info'
-                      closeIcon={null}
-                      description={t(
-                        '选择币种和链后生成钱包地址，用户向该地址转账即可完成稳定币充值。',
-                      )}
-                      fullMode={false}
-                    />
-                    <Row gutter={12} style={{ width: '100%' }}>
-                      <Col xs={24} md={12}>
-                        <Form.Select
-                          field='axoneCurrency'
-                          label={t('选择币种')}
-                          placeholder={t('请选择币种')}
-                          value={selectedAxoneCurrency}
-                          onChange={(value) => setSelectedAxoneCurrency(value)}
-                          optionList={(axoneCurrencies || []).map((currency) => ({
-                            label: currency,
-                            value: currency,
-                          }))}
-                        />
-                      </Col>
-                      <Col xs={24} md={12}>
-                        <Form.Select
-                          field='axoneChain'
-                          label={t('选择链')}
-                          placeholder={
-                            axoneChainLoading
-                              ? t('加载链列表中...')
-                              : t('请选择链')
-                          }
-                          value={selectedAxoneChain}
-                          onChange={(value) => setSelectedAxoneChain(value)}
-                          optionList={(axoneChains || []).map((chain) => ({
-                            label: `${chain.chain_name} (${chain.symbol})`,
-                            value: chain.chain_id,
-                          }))}
-                        />
-                      </Col>
-                    </Row>
-                    <Space>
-                      <Button
-                        theme='solid'
-                        type='primary'
-                        loading={axoneAddressLoading}
-                        onClick={generateAxoneAddress}
-                      >
-                        {t('生成钱包地址')}
-                      </Button>
-                      <Button
-                        icon={<Receipt size={14} />}
-                        loading={axoneChainLoading}
-                        onClick={getAxoneChains}
-                      >
-                        {t('刷新链列表')}
-                      </Button>
-                    </Space>
-                    {axoneAddress ? (
-                      <Card
-                        className='!rounded-xl w-full border-gray-200'
-                        bodyStyle={{ padding: '16px' }}
-                      >
-                        <Space vertical align='start' style={{ width: '100%' }}>
-                          <div className='flex items-center justify-between w-full gap-2'>
-                            <div>
-                              <div className='font-medium'>{t('钱包地址')}</div>
-                              <Text type='tertiary' size='small'>
-                                {selectedAxoneCurrency} · {selectedAxoneChain}
-                              </Text>
-                            </div>
-                            <Button onClick={handleCopyAxoneAddress}>
-                              {t('复制地址')}
-                            </Button>
-                          </div>
-                          <Text
-                            copyable={false}
-                            style={{
-                              wordBreak: 'break-all',
-                              fontFamily: 'monospace',
-                            }}
-                          >
-                            {axoneAddress}
-                          </Text>
-                        </Space>
-                      </Card>
-                    ) : null}
-                  </Space>
-                </Form.Slot>
-              )}
             </div>
           </Form>
         ) : (
@@ -695,6 +680,191 @@ const RechargeCard = ({
           />
         )}
       </Card>
+
+      <Modal
+        title={
+          <div className='flex items-center'>
+            <Coins className='mr-2' size={18} />
+            {t('稳定币支付')}
+          </div>
+        }
+        visible={axoneModalOpen}
+        footer={null}
+        onCancel={() => setAxoneModalOpen(false)}
+        maskClosable={false}
+        centered
+        width={520}
+        bodyStyle={{ paddingBottom: 16 }}
+      >
+        <div className='space-y-4'>
+          <Card
+            className='!rounded-xl w-full'
+            bodyStyle={{ padding: '14px 16px' }}
+          >
+            <div className='grid grid-cols-1 gap-4 sm:grid-cols-3'>
+              <div>
+                <Text type='tertiary' size='small'>
+                  {t('充值额度')}
+                </Text>
+                <div className='mt-1 text-base font-semibold'>
+                  {renderQuotaWithAmount(topUpCount)}
+                </div>
+              </div>
+              <div className='sm:text-center'>
+                <Text type='tertiary' size='small'>
+                  {t('手续费')}
+                </Text>
+                <div className='mt-1 text-base font-semibold'>
+                  {axoneFee || '-'} {selectedAxoneCurrency || t('稳定币')}
+                </div>
+              </div>
+              <div className='text-right'>
+                <Text type='tertiary' size='small'>
+                  {t('需转账金额')}
+                </Text>
+                <Skeleton
+                  loading={showAmountSkeleton}
+                  active
+                  placeholder={
+                    <Skeleton.Title
+                      style={{ width: 96, height: 24, borderRadius: 6 }}
+                    />
+                  }
+                >
+                  <div className='mt-1 text-lg font-bold text-red-600'>
+                    {axonePaymentMoney || axoneTransferAmount}{' '}
+                    {selectedAxoneCurrency || t('稳定币')}
+                  </div>
+                </Skeleton>
+              </div>
+            </div>
+          </Card>
+
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+            <div className='space-y-1.5'>
+              <Text strong>{t('选择币种')}</Text>
+              <Select
+                placeholder={t('请选择币种')}
+                value={selectedAxoneCurrency}
+                onChange={(value) => setSelectedAxoneCurrency(value)}
+                optionList={(axoneCurrencies || []).map((currency) => ({
+                  label: currency,
+                  value: currency,
+                }))}
+                style={{ width: '100%' }}
+              />
+              {(!axoneCurrencies || axoneCurrencies.length === 0) && (
+                <Text type='tertiary' size='small'>
+                  {t('暂未配置稳定币币种')}
+                </Text>
+              )}
+            </div>
+            <div className='space-y-1.5'>
+              <div className='flex items-center justify-between gap-2'>
+                <Text strong>{t('选择链')}</Text>
+                <Button
+                  theme='borderless'
+                  type='tertiary'
+                  size='small'
+                  icon={<Receipt size={14} />}
+                  loading={axoneChainLoading}
+                  onClick={getAxoneChains}
+                >
+                  {t('刷新')}
+                </Button>
+              </div>
+              <Select
+                placeholder={
+                  axoneChainLoading ? t('加载链列表中...') : t('请选择链')
+                }
+                value={selectedAxoneChain}
+                onChange={(value) => setSelectedAxoneChain(value)}
+                optionList={(axoneChains || []).map((chain) => ({
+                  label: `${chain.chain_name} (${chain.symbol})`,
+                  value: chain.chain_id,
+                }))}
+                style={{ width: '100%' }}
+              />
+              {!axoneChainLoading &&
+                (!axoneChains || axoneChains.length === 0) && (
+                  <Text type='tertiary' size='small'>
+                    {t('未加载到可用链，请刷新链列表或检查 AXOne 配置')}
+                  </Text>
+                )}
+            </div>
+          </div>
+
+          <Button
+            theme='solid'
+            type='primary'
+            style={{ width: '100%' }}
+            loading={axoneAddressLoading}
+            disabled={
+              !selectedAxoneCurrency ||
+              !selectedAxoneChain ||
+              axoneChainLoading
+            }
+            onClick={generateAxoneAddress}
+          >
+            {axoneAddress ? t('重新生成支付订单') : t('生成支付订单')}
+          </Button>
+
+          {axoneAddress ? (
+            <Card
+              className='!rounded-xl w-full border-gray-200'
+              bodyStyle={{ padding: '16px' }}
+            >
+              <div className='flex flex-col items-center gap-4 sm:flex-row sm:items-start'>
+                <div className='shrink-0 rounded-lg bg-white p-2'>
+                  <QRCodeSVG value={axoneAddress} size={148} />
+                </div>
+                <div className='w-full min-w-0 flex-1 space-y-3'>
+                  <div className='space-y-0.5'>
+                    <Text type='tertiary' size='small'>
+                      {t('请向以下地址转账')}{' '}
+                      {axonePaymentMoney || axoneTransferAmount}{' '}
+                      {selectedAxoneCurrency} · {selectedAxoneChainLabel}
+                    </Text>
+                    {axoneTradeNo ? (
+                      <Text type='tertiary' size='small'>
+                        {t('订单号')}：{axoneTradeNo}
+                        {axoneExpireText ? ` · ${t('过期时间')}：${axoneExpireText}` : ''}
+                      </Text>
+                    ) : null}
+                    <div className='grid grid-cols-1 gap-1 sm:grid-cols-3'>
+                      <Text type='tertiary' size='small'>
+                        {t('支付金额')}：{axoneBasePaymentMoney || '-'}
+                      </Text>
+                      <Text type='tertiary' size='small'>
+                        {t('手续费')}：{axoneFee || '0.0000'}
+                      </Text>
+                      <Text type='danger' size='small' strong>
+                        {t('总支付金额')}：{axonePaymentMoney || axoneTransferAmount}
+                      </Text>
+                    </div>
+                    <Text
+                      copyable={false}
+                      style={{
+                        wordBreak: 'break-all',
+                        fontFamily: 'monospace',
+                        fontSize: '13px',
+                      }}
+                    >
+                      {axoneAddress}
+                    </Text>
+                  </div>
+                  <Button
+                    style={{ width: '100%' }}
+                    onClick={handleCopyAxoneAddress}
+                  >
+                    {t('复制地址')}
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          ) : null}
+        </div>
+      </Modal>
 
       {/* 兑换码充值 */}
       {enableRedemption ? (

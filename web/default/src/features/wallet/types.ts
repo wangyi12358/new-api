@@ -127,14 +127,22 @@ export interface AxoneChain {
 }
 
 export interface AxoneAddressRequest {
+  amount: number
   currency: string
   chain_id: string
 }
 
 export interface AxoneAddressData {
+  trade_no: string
+  amount: number
+  base_payment_money?: string
+  fee?: string
+  payment_money: string
   currency: string
   chain_id: string
   address: string
+  expires_at: number
+  status: TopupStatus
 }
 
 /**
@@ -276,7 +284,7 @@ export interface UserWalletData {
 /**
  * Topup record status
  */
-export type TopupStatus = 'success' | 'pending' | 'expired'
+export type TopupStatus = 'success' | 'pending' | 'expired' | 'failed'
 
 /**
  * Topup billing record
@@ -290,10 +298,24 @@ export interface TopupRecord {
   amount: number
   /** Payment amount (actual money paid) */
   money: number
+  /** Payment fee */
+  fee?: number
   /** Trade/order number */
   trade_no: string
   /** Payment method type */
   payment_method: string
+  /** Payment provider type */
+  payment_provider?: string
+  /** AXOne currency */
+  axone_currency?: string
+  /** AXOne chain ID */
+  axone_chain_id?: string
+  /** AXOne deposit address */
+  axone_address?: string
+  /** Expiration timestamp */
+  expire_time?: number
+  /** Blockchain transaction hash */
+  tx_hash?: string
   /** Creation timestamp */
   create_time: number
   /** Completion timestamp */

@@ -1683,6 +1683,8 @@
     "支付请求失败": "支付请求失败",
     "支付返回地址": "支付返回地址",
     "支付金额": "支付金额",
+    "手续费": "手续费",
+    "总支付金额": "总支付金额",
     "支持 Ctrl+V 粘贴图片": "支持 Ctrl+V 粘贴图片",
     "支持 JSONPath，如 email, data.user.email": "支持 JSONPath，如 email, data.user.email",
     "支持 JSONPath，如 name, display_name, data.user.name": "支持 JSONPath，如 name, display_name, data.user.name",

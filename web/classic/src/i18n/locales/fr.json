@@ -1722,6 +1722,8 @@
     "支付请求失败": "Échec de la demande de paiement",
     "支付返回地址": "URL de retour",
     "支付金额": "Montant payé",
+    "手续费": "Frais",
+    "总支付金额": "Montant total à payer",
     "支持 Ctrl+V 粘贴图片": "Supporte Ctrl+V pour coller l'image",
     "支持6位TOTP验证码或8位备用码，可到`个人设置-安全设置-两步验证设置`配置或查看。": "Prend en charge le code de vérification TOTP à 6 chiffres ou le code de sauvegarde à 8 chiffres, peut être configuré ou consulté dans `Paramètres personnels - Paramètres de sécurité - Paramètres d'authentification à deux facteurs`.",
     "支持CIDR格式，如：8.8.8.8, 192.168.1.0/24": "Prend en charge le format CIDR, par exemple : 8.8.8.8, 192.168.1.0/24",

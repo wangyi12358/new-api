@@ -34,16 +34,19 @@ import { useAxoneTopup } from '../hooks'
 
 interface AxoneTopupSectionProps {
   enabled: boolean
+  amount: number
   currencies?: string[]
 }
 
 export function AxoneTopupSection({
   enabled,
+  amount,
   currencies = [],
 }: AxoneTopupSectionProps) {
   const { t } = useTranslation()
   const [selectedCurrency, setSelectedCurrency] = useState('')
   const [selectedChainID, setSelectedChainID] = useState('')
+  const [nowMs, setNowMs] = useState(() => Date.now())
   const {
     chains,
     chainsLoading,
@@ -67,22 +70,43 @@ export function AxoneTopupSection({
   }, [normalizedCurrencies])
 
   useEffect(() => {
+    setSelectedChainID((previous) => previous || chains[0]?.chain_id || '')
+  }, [chains])
+
+  useEffect(() => {
     setAddressData(null)
   }, [selectedCurrency, selectedChainID, setAddressData])
+
+  useEffect(() => {
+    if (!addressData?.expires_at) {
+      return
+    }
+    const timer = window.setInterval(() => {
+      setNowMs(Date.now())
+    }, 1000)
+    return () => window.clearInterval(timer)
+  }, [addressData?.expires_at])
 
   if (!enabled) {
     return null
   }
 
   const handleGenerateAddress = async () => {
-    if (!selectedCurrency || !selectedChainID) {
+    if (!selectedCurrency || !selectedChainID || amount <= 0) {
       return
     }
-    await generateAddress(selectedCurrency, selectedChainID)
+    await generateAddress(amount, selectedCurrency, selectedChainID)
   }
 
+  const remainingSeconds = Math.max(
+    0,
+    Math.floor((Number(addressData?.expires_at || 0) * 1000 - nowMs) / 1000)
+  )
+  const remainingMinutes = Math.floor(remainingSeconds / 60)
+  const remainingDisplaySeconds = remainingSeconds % 60
+
   return (
-    <div className='space-y-2.5 border-t pt-4 sm:space-y-3 sm:pt-6'>
+    <div className='space-y-4'>
       <div className='flex items-center gap-2'>
         <Coins className='text-muted-foreground h-4 w-4' />
         <Label className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
@@ -93,10 +117,32 @@ export function AxoneTopupSection({
       <Alert>
         <AlertDescription>
           {t(
-            'Choose a currency and chain, generate the hosted wallet address, and transfer funds to that address.'
+            'Choose a currency and chain, generate a payment order, and transfer funds to the wallet address.'
           )}
         </AlertDescription>
       </Alert>
+
+      <div className='bg-muted/30 grid gap-3 rounded-lg border p-3 text-sm sm:grid-cols-3'>
+        <div>
+          <div className='text-muted-foreground text-xs'>{t('Topup Amount')}</div>
+          <div className='mt-1 font-semibold'>{amount || '-'}</div>
+        </div>
+        <div>
+          <div className='text-muted-foreground text-xs'>{t('Fee Amount')}</div>
+          <div className='mt-1 font-semibold'>
+            {addressData?.fee || '-'} {selectedCurrency || t('Currency')}
+          </div>
+        </div>
+        <div>
+          <div className='text-muted-foreground text-xs'>
+            {t('Transfer Amount')}
+          </div>
+          <div className='mt-1 font-bold text-red-600'>
+            {addressData?.payment_money || '-'}{' '}
+            {selectedCurrency || t('Currency')}
+          </div>
+        </div>
+      </div>
 
       <div className='grid gap-3 sm:grid-cols-2'>
         <div className='space-y-2'>
@@ -113,6 +159,11 @@ export function AxoneTopupSection({
               ))}
             </SelectContent>
           </Select>
+          {normalizedCurrencies.length === 0 && (
+            <p className='text-muted-foreground text-xs'>
+              {t('No stablecoin currencies are configured yet.')}
+            </p>
+          )}
         </div>
 
         <div className='space-y-2'>
@@ -150,6 +201,13 @@ export function AxoneTopupSection({
               ))}
             </SelectContent>
           </Select>
+          {!chainsLoading && chains.length === 0 && (
+            <p className='text-muted-foreground text-xs'>
+              {t(
+                'No supported chains were loaded. Please refresh or check the AXOne configuration.'
+              )}
+            </p>
+          )}
         </div>
       </div>
 
@@ -159,6 +217,7 @@ export function AxoneTopupSection({
         disabled={
           generating ||
           chainsLoading ||
+          amount <= 0 ||
           !selectedCurrency ||
           !selectedChainID ||
           normalizedCurrencies.length === 0
@@ -166,7 +225,7 @@ export function AxoneTopupSection({
         className='w-full sm:w-auto'
       >
         {generating && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-        {t('Generate Wallet Address')}
+        {t('Generate Payment Order')}
       </Button>
 
       {addressData?.address && (
@@ -179,6 +238,38 @@ export function AxoneTopupSection({
               </div>
             </div>
             <CopyButton value={addressData.address} variant='outline' />
+          </div>
+          <div className='grid gap-2 text-sm sm:grid-cols-2'>
+            <div>
+              <span className='text-muted-foreground'>{t('Order No')}: </span>
+              <span className='font-mono'>{addressData.trade_no}</span>
+            </div>
+            <div>
+              <span className='text-muted-foreground'>{t('Payment')}: </span>
+              <span>{addressData.base_payment_money || '-'}</span>
+            </div>
+            <div>
+              <span className='text-muted-foreground'>{t('Fee Amount')}: </span>
+              <span>{addressData.fee || '0.0000'}</span>
+            </div>
+            <div>
+              <span className='text-muted-foreground'>{t('Transfer Amount')}: </span>
+              <span className='font-semibold text-red-600'>
+                {addressData.payment_money}
+              </span>
+            </div>
+            <div>
+              <span className='text-muted-foreground'>{t('Topup Amount')}: </span>
+              <span>{addressData.amount}</span>
+            </div>
+            <div>
+              <span className='text-muted-foreground'>{t('Expires In')}: </span>
+              <span>
+                {remainingMinutes}:{remainingDisplaySeconds
+                  .toString()
+                  .padStart(2, '0')}
+              </span>
+            </div>
           </div>
           <div className='break-all font-mono text-sm'>{addressData.address}</div>
         </div>
