@@ -130,7 +130,7 @@ export function AxoneTopupSection({
         <div>
           <div className='text-muted-foreground text-xs'>{t('Fee Amount')}</div>
           <div className='mt-1 font-semibold'>
-            {addressData?.fee || '-'} {selectedCurrency || t('Currency')}
+            {addressData?.display_fee || '-'} {selectedCurrency || t('Currency')}
           </div>
         </div>
         <div>
@@ -138,7 +138,7 @@ export function AxoneTopupSection({
             {t('Transfer Amount')}
           </div>
           <div className='mt-1 font-bold text-red-600'>
-            {addressData?.payment_money || '-'}{' '}
+            {addressData?.display_payment_money || '-'}{' '}
             {selectedCurrency || t('Currency')}
           </div>
         </div>
@@ -250,12 +250,12 @@ export function AxoneTopupSection({
             </div>
             <div>
               <span className='text-muted-foreground'>{t('Fee Amount')}: </span>
-              <span>{addressData.fee || '0.0000'}</span>
+              <span>{addressData.display_fee || '0.00'}</span>
             </div>
             <div>
               <span className='text-muted-foreground'>{t('Transfer Amount')}: </span>
               <span className='font-semibold text-red-600'>
-                {addressData.payment_money}
+                {addressData.display_payment_money || addressData.payment_money}
               </span>
             </div>
             <div>

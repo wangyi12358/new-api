@@ -137,7 +137,9 @@ export interface AxoneAddressData {
   amount: number
   base_payment_money?: string
   fee?: string
+  display_fee?: string
   payment_money: string
+  display_payment_money?: string
   currency: string
   chain_id: string
   address: string

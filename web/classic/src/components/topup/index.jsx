@@ -872,8 +872,8 @@ const TopUp = () => {
         setAxoneAddress(data.address);
         setAxoneTradeNo(data.trade_no || '');
         setAxoneBasePaymentMoney(data.base_payment_money || '');
-        setAxoneFee(data.fee || '');
-        setAxonePaymentMoney(data.payment_money || '');
+        setAxoneFee(data.display_fee || data.fee || '');
+        setAxonePaymentMoney(data.display_payment_money || data.payment_money || '');
         setAxoneExpireAt(Number(data.expires_at) || 0);
         showSuccess(t('支付订单已生成'));
         return;

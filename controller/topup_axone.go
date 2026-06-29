@@ -11,7 +11,6 @@ import (
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/setting"
-	"github.com/QuantumNous/new-api/setting/operation_setting"
 
 	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
@@ -82,13 +81,7 @@ func RequestAxoneAddress(c *gin.Context) {
 	}
 
 	id := c.GetInt("id")
-	group, err := model.GetUserGroup(id, true)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "获取用户分组失败"})
-		return
-	}
-
-	baseMoney := decimal.NewFromFloat(getPayMoney(req.Amount, group)).Round(axoneUniqueScale)
+	baseMoney := decimal.NewFromInt(req.Amount).Round(axoneUniqueScale)
 	feeMoney := decimal.Zero
 	feePercent := decimal.NewFromFloat(setting.GetAxoneFeePercent())
 	if feePercent.IsPositive() {
@@ -122,20 +115,10 @@ func RequestAxoneAddress(c *gin.Context) {
 		return
 	}
 
-	amount := req.Amount
-	if operation_setting.GetQuotaDisplayType() == operation_setting.QuotaDisplayTypeTokens {
-		dAmount := decimal.NewFromInt(req.Amount)
-		dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
-		amount = dAmount.Div(dQuotaPerUnit).IntPart()
-		if amount < 1 {
-			amount = 1
-		}
-	}
-
 	expireTime := now + axoneOrderExpireSeconds
 	topUp := &model.TopUp{
 		UserId:          id,
-		Amount:          amount,
+		Amount:          req.Amount,
 		Money:           uniqueMoney.InexactFloat64(),
 		Fee:             feeMoney.InexactFloat64(),
 		TradeNo:         tradeNo,
@@ -155,16 +138,18 @@ func RequestAxoneAddress(c *gin.Context) {
 	}
 
 	common.ApiSuccess(c, gin.H{
-		"trade_no":           tradeNo,
-		"amount":             req.Amount,
-		"base_payment_money": baseMoney.StringFixed(axoneUniqueScale),
-		"fee":                feeMoney.StringFixed(axoneUniqueScale),
-		"payment_money":      uniqueMoney.StringFixed(axoneUniqueScale),
-		"currency":           currency,
-		"chain_id":           chainID,
-		"address":            address,
-		"expires_at":         expireTime,
-		"status":             common.TopUpStatusPending,
+		"trade_no":              tradeNo,
+		"amount":                req.Amount,
+		"base_payment_money":    baseMoney.StringFixed(axoneUniqueScale),
+		"fee":                   feeMoney.StringFixed(axoneUniqueScale),
+		"payment_money":         uniqueMoney.StringFixed(axoneUniqueScale),
+		"display_fee":           feeMoney.StringFixed(2),
+		"display_payment_money": uniqueMoney.StringFixed(2),
+		"currency":              currency,
+		"chain_id":              chainID,
+		"address":               address,
+		"expires_at":            expireTime,
+		"status":                common.TopUpStatusPending,
 	})
 }
 

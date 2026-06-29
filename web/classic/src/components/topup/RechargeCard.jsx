@@ -137,15 +137,7 @@ const RechargeCard = ({
     if (!amountNumber || amountNumber <= 0) {
       return '0.00';
     }
-    let usdRate = 7;
-    try {
-      const statusStr = localStorage.getItem('status');
-      if (statusStr) {
-        const s = JSON.parse(statusStr);
-        usdRate = s?.usd_exchange_rate || 7;
-      }
-    } catch (e) {}
-    return (amountNumber / usdRate).toFixed(2);
+    return Number(amountNumber).toFixed(2);
   }, [amountNumber]);
 
   const selectedAxoneChainInfo = useMemo(

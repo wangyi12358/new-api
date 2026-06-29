@@ -49,7 +49,7 @@ const STATUS_CONFIG = {
 
 // 支付方式映射
 const PAYMENT_METHOD_MAP = {
-  axone: 'AXOne 稳定币',
+  axone: '稳定币',
   stripe: 'Stripe',
   creem: 'Creem',
   waffo: 'Waffo',
