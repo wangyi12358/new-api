@@ -157,6 +157,14 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
     return Number(record?.amount || 0) === 0 && tradeNo.startsWith('sub');
   };
 
+  const renderPaymentMoney = (money, record) => {
+    const symbol =
+      record?.payment_provider === 'axone' || record?.payment_method === 'axone'
+        ? '$'
+        : '¥';
+    return <Text type='danger'>{symbol}{Number(money || 0).toFixed(2)}</Text>;
+  };
+
   // 检查是否为管理员
   const userIsAdmin = useMemo(() => isAdmin(), []);
 
@@ -208,7 +216,7 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
         title: t('支付金额'),
         dataIndex: 'money',
         key: 'money',
-        render: (money) => <Text type='danger'>¥{money.toFixed(2)}</Text>,
+        render: renderPaymentMoney,
       },
       {
         title: t('手续费'),

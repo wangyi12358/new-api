@@ -25,7 +25,7 @@ type axoneAddressRequest struct {
 
 const (
 	axoneOrderExpireSeconds = int64(15 * 60)
-	axoneUniqueScale        = int32(4)
+	axoneMoneyScale         = int32(2)
 	axoneUniqueSlots        = 9000
 )
 
@@ -81,13 +81,13 @@ func RequestAxoneAddress(c *gin.Context) {
 	}
 
 	id := c.GetInt("id")
-	baseMoney := decimal.NewFromInt(req.Amount).Round(axoneUniqueScale)
+	baseMoney := decimal.NewFromInt(req.Amount).Round(axoneMoneyScale)
 	feeMoney := decimal.Zero
 	feePercent := decimal.NewFromFloat(setting.GetAxoneFeePercent())
 	if feePercent.IsPositive() {
-		feeMoney = baseMoney.Mul(feePercent).Div(decimal.NewFromInt(100)).RoundCeil(axoneUniqueScale)
+		feeMoney = baseMoney.Mul(feePercent).Div(decimal.NewFromInt(100)).RoundCeil(axoneMoneyScale)
 	}
-	paymentMoney := baseMoney.Add(feeMoney).Round(axoneUniqueScale)
+	paymentMoney := baseMoney.Add(feeMoney).Round(axoneMoneyScale)
 	if !paymentMoney.IsPositive() {
 		common.ApiErrorMsg(c, "Invalid AXOne payment amount")
 		return
@@ -140,9 +140,9 @@ func RequestAxoneAddress(c *gin.Context) {
 	common.ApiSuccess(c, gin.H{
 		"trade_no":              tradeNo,
 		"amount":                req.Amount,
-		"base_payment_money":    baseMoney.StringFixed(axoneUniqueScale),
-		"fee":                   feeMoney.StringFixed(axoneUniqueScale),
-		"payment_money":         uniqueMoney.StringFixed(axoneUniqueScale),
+		"base_payment_money":    baseMoney.StringFixed(axoneMoneyScale),
+		"fee":                   feeMoney.StringFixed(axoneMoneyScale),
+		"payment_money":         uniqueMoney.StringFixed(axoneMoneyScale),
 		"display_fee":           feeMoney.StringFixed(2),
 		"display_payment_money": uniqueMoney.StringFixed(2),
 		"currency":              currency,
@@ -164,7 +164,7 @@ func containsAxoneCurrency(currency string) bool {
 
 func allocateAxoneUniqueMoney(currency string, chainID string, baseMoney decimal.Decimal, now int64) (decimal.Decimal, error) {
 	for i := 0; i < axoneUniqueSlots; i++ {
-		candidate := baseMoney.Add(decimal.NewFromInt(int64(i + 1)).Div(decimal.NewFromInt(10000))).Round(axoneUniqueScale)
+		candidate := baseMoney.Add(decimal.NewFromInt(int64(i)).Div(decimal.NewFromInt(100))).Round(axoneMoneyScale)
 		inUse, err := model.IsActiveAxoneTopUpMoneyInUse(currency, chainID, candidate.InexactFloat64(), now)
 		if err != nil {
 			return decimal.Zero, err

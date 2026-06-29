@@ -89,6 +89,15 @@ export function BillingHistoryDialog({
   const { copyToClipboard, copiedText } = useCopyToClipboard({ notify: false })
 
   const totalPages = Math.ceil(total / pageSize)
+  const formatPaymentMoney = (record: (typeof records)[number]) => {
+    if (
+      record.payment_provider === 'axone' ||
+      record.payment_method === 'axone'
+    ) {
+      return `$${Number(record.money || 0).toFixed(2)}`
+    }
+    return formatNumber(record.money)
+  }
 
   useEffect(() => {
     if (open) {
@@ -262,7 +271,7 @@ export function BillingHistoryDialog({
                               {t('Payment')}
                             </Label>
                             <div className='text-sm font-semibold text-red-600'>
-                              {formatNumber(record.money)}
+                              {formatPaymentMoney(record)}
                             </div>
                           </div>
                           {record.payment_provider === 'axone' && (

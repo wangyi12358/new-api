@@ -897,6 +897,18 @@ const TopUp = () => {
     }
   };
 
+  const handleCopyAxonePaymentMoney = async () => {
+    const paymentMoney = axonePaymentMoney || '';
+    if (!paymentMoney) {
+      return;
+    }
+    if (await copy(paymentMoney)) {
+      showSuccess(t('支付金额已复制到剪贴板'));
+    } else {
+      showError(t('复制失败'));
+    }
+  };
+
   // URL 参数自动打开账单弹窗（支付回跳时触发）
   useEffect(() => {
     if (searchParams.get('show_history') === 'true') {
@@ -1185,6 +1197,7 @@ const TopUp = () => {
           getAxoneChains={getAxoneChains}
           generateAxoneAddress={generateAxoneAddress}
           handleCopyAxoneAddress={handleCopyAxoneAddress}
+          handleCopyAxonePaymentMoney={handleCopyAxonePaymentMoney}
           presetAmounts={presetAmounts}
           selectedPreset={selectedPreset}
           selectPresetAmount={selectPresetAmount}

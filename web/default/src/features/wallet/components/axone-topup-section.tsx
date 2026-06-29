@@ -122,7 +122,7 @@ export function AxoneTopupSection({
         </AlertDescription>
       </Alert>
 
-      <div className='bg-muted/30 grid gap-3 rounded-lg border p-3 text-sm sm:grid-cols-3'>
+      <div className='bg-muted/30 grid gap-3 rounded-lg border p-3 text-sm sm:grid-cols-4'>
         <div>
           <div className='text-muted-foreground text-xs'>{t('Topup Amount')}</div>
           <div className='mt-1 font-semibold'>{amount || '-'}</div>
@@ -135,12 +135,31 @@ export function AxoneTopupSection({
         </div>
         <div>
           <div className='text-muted-foreground text-xs'>
-            {t('Transfer Amount')}
+            {t('Total')}
           </div>
-          <div className='mt-1 font-bold text-red-600'>
-            {addressData?.display_payment_money || '-'}{' '}
-            {selectedCurrency || t('Currency')}
+          <div className='mt-1 flex items-center gap-2 font-bold text-red-600'>
+            <span>
+              {addressData?.display_payment_money || '-'}{' '}
+              {selectedCurrency || t('Currency')}
+            </span>
+            {addressData?.display_payment_money && (
+              <CopyButton
+                value={addressData.display_payment_money}
+                variant='outline'
+                size='sm'
+                className='h-7 px-2'
+                iconClassName='h-3.5 w-3.5'
+              >
+                <span className='text-xs'>{t('Copy')}</span>
+              </CopyButton>
+            )}
           </div>
+        </div>
+        <div>
+          <div className='text-muted-foreground text-xs'>
+            {t('Credit Amount')}
+          </div>
+          <div className='mt-1 font-semibold'>{addressData?.amount || amount || '-'}</div>
         </div>
       </div>
 
@@ -230,6 +249,14 @@ export function AxoneTopupSection({
 
       {addressData?.address && (
         <div className='bg-muted/30 space-y-2 rounded-lg border p-3'>
+          <Alert variant='destructive'>
+            <AlertDescription>
+              {t(
+                'Please transfer the exact amount shown on this page. Otherwise the system may not be able to identify your payment order.'
+              )}
+            </AlertDescription>
+          </Alert>
+
           <div className='flex items-center justify-between gap-3'>
             <div>
               <div className='text-sm font-medium'>{t('Wallet Address')}</div>
@@ -254,12 +281,23 @@ export function AxoneTopupSection({
             </div>
             <div>
               <span className='text-muted-foreground'>{t('Transfer Amount')}: </span>
-              <span className='font-semibold text-red-600'>
-                {addressData.display_payment_money || addressData.payment_money}
+              <span className='inline-flex items-center gap-2'>
+                <span className='font-semibold text-red-600'>
+                  {addressData.display_payment_money || addressData.payment_money}
+                </span>
+                <CopyButton
+                  value={addressData.display_payment_money || addressData.payment_money}
+                  variant='outline'
+                  size='sm'
+                  className='h-7 px-2'
+                  iconClassName='h-3.5 w-3.5'
+                >
+                  <span className='text-xs'>{t('Copy')}</span>
+                </CopyButton>
               </span>
             </div>
             <div>
-              <span className='text-muted-foreground'>{t('Topup Amount')}: </span>
+              <span className='text-muted-foreground'>{t('Credit Amount')}: </span>
               <span>{addressData.amount}</span>
             </div>
             <div>

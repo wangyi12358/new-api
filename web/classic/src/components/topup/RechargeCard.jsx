@@ -48,7 +48,7 @@ import {
   Receipt,
   Sparkles,
 } from 'lucide-react';
-import { IconGift } from '@douyinfe/semi-icons';
+import { IconCopy, IconGift } from '@douyinfe/semi-icons';
 import { useMinimumLoadingTime } from '../../hooks/common/useMinimumLoadingTime';
 import { useActualTheme } from '../../context/Theme';
 import { getCurrencyConfig } from '../../helpers/render';
@@ -82,6 +82,7 @@ const RechargeCard = ({
   getAxoneChains,
   generateAxoneAddress,
   handleCopyAxoneAddress,
+  handleCopyAxonePaymentMoney,
   presetAmounts,
   selectedPreset,
   selectPresetAmount,
@@ -149,20 +150,38 @@ const RechargeCard = ({
   const selectedAxoneChainLabel = selectedAxoneChainInfo
     ? `${selectedAxoneChainInfo.chain_name} (${selectedAxoneChainInfo.symbol})`
     : selectedAxoneChain;
-  const formatAxoneExpireTime = (timestamp) => {
-    if (!timestamp) {
-      return '';
+  const [axoneNowMs, setAxoneNowMs] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!axoneExpireAt || axoneExpireAt <= 0) {
+      return;
     }
-    const date = new Date(timestamp * 1000);
-    if (Number.isNaN(date.getTime())) {
-      return '';
+    setAxoneNowMs(Date.now());
+    const timer = window.setInterval(() => {
+      setAxoneNowMs(Date.now());
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [axoneExpireAt]);
+
+  const axoneRemainingSeconds = Math.max(
+    0,
+    Math.floor((Number(axoneExpireAt || 0) * 1000 - axoneNowMs) / 1000),
+  );
+  const axoneRemainingHours = Math.floor(axoneRemainingSeconds / 3600);
+  const axoneRemainingMinutes = Math.floor((axoneRemainingSeconds % 3600) / 60);
+  const axoneRemainingDisplaySeconds = axoneRemainingSeconds % 60;
+  const getAxoneCountdownText = () => {
+    if (axoneRemainingSeconds <= 0) {
+      return t('已过期');
     }
-    return date.toLocaleString();
+    const secondsText = String(axoneRemainingDisplaySeconds).padStart(2, '0');
+    if (axoneRemainingHours > 0) {
+      const minutesText = String(axoneRemainingMinutes).padStart(2, '0');
+      return `${axoneRemainingHours}:${minutesText}:${secondsText}`;
+    }
+    return `${axoneRemainingMinutes}:${secondsText}`;
   };
-  const axoneExpireText =
-    axoneExpireAt && axoneExpireAt > 0
-      ? formatAxoneExpireTime(axoneExpireAt)
-      : '';
+  const axoneCountdownText = getAxoneCountdownText();
 
   useEffect(() => {
     if (initialTabSetRef.current) return;
@@ -340,28 +359,28 @@ const RechargeCard = ({
                       parser={(value) =>
                         value ? parseInt(value.replace(/[^\d]/g, '')) : 0
                       }
-                      extraText={
-                        <Skeleton
-                          loading={showAmountSkeleton}
-                          active
-                          placeholder={
-                            <Skeleton.Title
-                              style={{
-                                width: 120,
-                                height: 20,
-                                borderRadius: 6,
-                              }}
-                            />
-                          }
-                        >
-                          <Text type='secondary' className='text-red-600'>
-                            {t('实付金额：')}
-                            <span style={{ color: 'red' }}>
-                              {renderAmount()}
-                            </span>
-                          </Text>
-                        </Skeleton>
-                      }
+                      // extraText={
+                      //   <Skeleton
+                      //     loading={showAmountSkeleton}
+                      //     active
+                      //     placeholder={
+                      //       <Skeleton.Title
+                      //         style={{
+                      //           width: 120,
+                      //           height: 20,
+                      //           borderRadius: 6,
+                      //         }}
+                      //       />
+                      //     }
+                      //   >
+                      //     <Text type='secondary' className='text-red-600'>
+                      //       {t('实付金额：')}
+                      //       <span style={{ color: 'red' }}>
+                      //         {renderAmount()}
+                      //       </span>
+                      //     </Text>
+                      //   </Skeleton>
+                      // }
                       style={{ width: '100%' }}
                     />
                   </Col>
@@ -693,7 +712,7 @@ const RechargeCard = ({
             className='!rounded-xl w-full'
             bodyStyle={{ padding: '14px 16px' }}
           >
-            <div className='grid grid-cols-1 gap-4 sm:grid-cols-3'>
+            <div className='grid grid-cols-1 gap-4 sm:grid-cols-4'>
               <div>
                 <Text type='tertiary' size='small'>
                   {t('充值额度')}
@@ -712,7 +731,7 @@ const RechargeCard = ({
               </div>
               <div className='text-right'>
                 <Text type='tertiary' size='small'>
-                  {t('需转账金额')}
+                  {t('总计')}
                 </Text>
                 <Skeleton
                   loading={showAmountSkeleton}
@@ -723,11 +742,21 @@ const RechargeCard = ({
                     />
                   }
                 >
-                  <div className='mt-1 text-lg font-bold text-red-600'>
-                    {axonePaymentMoney || axoneTransferAmount}{' '}
-                    {selectedAxoneCurrency || t('稳定币')}
+                  <div className='mt-1 flex items-center justify-end gap-2 text-base font-semibold text-red-600'>
+                    <span>
+                      {axonePaymentMoney || '-'}{' '}
+                      {selectedAxoneCurrency || t('稳定币')}
+                    </span>
                   </div>
                 </Skeleton>
+              </div>
+              <div className='text-right'>
+                <Text type='tertiary' size='small'>
+                  {t('到账金额')}
+                </Text>
+                <div className='mt-1 text-base font-semibold'>
+                  {renderQuotaWithAmount(topUpCount)}
+                </div>
               </div>
             </div>
           </Card>
@@ -806,51 +835,131 @@ const RechargeCard = ({
               className='!rounded-xl w-full border-gray-200'
               bodyStyle={{ padding: '16px' }}
             >
-              <div className='flex flex-col items-center gap-4 sm:flex-row sm:items-start'>
-                <div className='shrink-0 rounded-lg bg-white p-2'>
-                  <QRCodeSVG value={axoneAddress} size={148} />
-                </div>
-                <div className='w-full min-w-0 flex-1 space-y-3'>
-                  <div className='space-y-0.5'>
+              <Banner
+                type='danger'
+                closeIcon={null}
+                fullMode={false}
+                description={t(
+                  '请务必按页面展示的转账金额转账，否则系统可能无法识别支付订单。',
+                )}
+                style={{ marginBottom: 16 }}
+              />
+              <div className='flex flex-col gap-5'>
+                <div className='w-full space-y-4'>
+                  <div className='rounded-xl bg-gray-50 px-4 py-3 dark:bg-gray-800'>
                     <Text type='tertiary' size='small'>
-                      {t('请向以下地址转账')}{' '}
-                      {axonePaymentMoney || axoneTransferAmount}{' '}
-                      {selectedAxoneCurrency} · {selectedAxoneChainLabel}
+                      {t('请向以下地址转账')}
                     </Text>
-                    {axoneTradeNo ? (
-                      <Text type='tertiary' size='small'>
-                        {t('订单号')}：{axoneTradeNo}
-                        {axoneExpireText ? ` · ${t('过期时间')}：${axoneExpireText}` : ''}
-                      </Text>
-                    ) : null}
-                    <div className='grid grid-cols-1 gap-1 sm:grid-cols-3'>
-                      <Text type='tertiary' size='small'>
-                        {t('支付金额')}：{axoneBasePaymentMoney || '-'}
-                      </Text>
-                      <Text type='tertiary' size='small'>
-                        {t('手续费')}：{axoneFee || '0.0000'}
-                      </Text>
-                      <Text type='danger' size='small' strong>
-                        {t('总支付金额')}：{axonePaymentMoney || axoneTransferAmount}
-                      </Text>
+                    <div className='mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1'>
+                      <span className='text-2xl font-bold text-red-600'>
+                        {axonePaymentMoney || axoneTransferAmount}
+                      </span>
+                      <span className='text-base font-medium'>
+                        {selectedAxoneCurrency}
+                      </span>
                     </div>
-                    <Text
-                      copyable={false}
-                      style={{
-                        wordBreak: 'break-all',
-                        fontFamily: 'monospace',
-                        fontSize: '13px',
-                      }}
-                    >
-                      {axoneAddress}
+                    <Text type='tertiary' size='small' className='mt-1 block'>
+                      {selectedAxoneChainLabel}
                     </Text>
                   </div>
-                  <Button
-                    style={{ width: '100%' }}
-                    onClick={handleCopyAxoneAddress}
-                  >
-                    {t('复制地址')}
-                  </Button>
+
+                  {axoneTradeNo ? (
+                    <div className='space-y-2 rounded-lg border border-gray-200 px-3 py-2.5'>
+                      <div className='flex items-start justify-between gap-3'>
+                        <Text type='tertiary' size='small' className='shrink-0'>
+                          {t('订单号')}
+                        </Text>
+                        <Text
+                          size='small'
+                          style={{ wordBreak: 'break-all', textAlign: 'right' }}
+                        >
+                          {axoneTradeNo}
+                        </Text>
+                      </div>
+                      {axoneExpireAt > 0 ? (
+                        <div className='flex items-start justify-between gap-3'>
+                          <Text type='tertiary' size='small' className='shrink-0'>
+                            {t('剩余时间')}
+                          </Text>
+                          <Text
+                            size='small'
+                            type={axoneRemainingSeconds <= 0 ? 'danger' : 'warning'}
+                            strong={axoneRemainingSeconds <= 60}
+                            style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}
+                          >
+                            {axoneCountdownText}
+                          </Text>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  <div className='space-y-2 rounded-lg border border-gray-200 px-3 py-2.5'>
+                    <div className='flex items-center justify-between gap-3'>
+                      <Text type='tertiary' size='small'>
+                        {t('支付金额')}
+                      </Text>
+                      <Text size='small'>{axoneBasePaymentMoney || '-'}</Text>
+                    </div>
+                    <div className='flex items-center justify-between gap-3'>
+                      <Text type='tertiary' size='small'>
+                        {t('手续费')}
+                      </Text>
+                      <Text size='small'>{axoneFee || '0.0000'}</Text>
+                    </div>
+                    <div className='flex items-center justify-between gap-3 border-t border-gray-200 pt-2'>
+                      <Text type='danger' size='small' strong>
+                        {t('总支付金额')}
+                      </Text>
+                      <div className='flex items-center gap-2'>
+                        <Text type='danger' size='small' strong>
+                          {axonePaymentMoney || axoneTransferAmount}
+                        </Text>
+                        <Button
+                          size='small'
+                          theme='outline'
+                          type='tertiary'
+                          icon={<IconCopy />}
+                          onClick={handleCopyAxonePaymentMoney}
+                        >
+                          {t('复制')}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className='space-y-2'>
+                    <Text type='tertiary' size='small'>
+                      {t('钱包地址')}
+                    </Text>
+                    <div className='rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 dark:bg-gray-800'>
+                      <Text
+                        copyable={false}
+                        style={{
+                          wordBreak: 'break-all',
+                          fontFamily: 'monospace',
+                          fontSize: '13px',
+                        }}
+                      >
+                        {axoneAddress}
+                      </Text>
+                    </div>
+                    <Button
+                      style={{ width: '100%' }}
+                      onClick={handleCopyAxoneAddress}
+                    >
+                      {t('复制地址')}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className='flex flex-col items-center rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-4 dark:bg-gray-800'>
+                  <div className='rounded-lg bg-white p-2'>
+                    <QRCodeSVG value={axoneAddress} size={180} />
+                  </div>
+                  <Text type='tertiary' size='small' className='mt-2'>
+                    {t('扫码转账')}
+                  </Text>
                 </div>
               </div>
             </Card>
