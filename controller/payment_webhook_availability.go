@@ -123,7 +123,13 @@ func isAxoneTopUpEnabled() bool {
 }
 
 func isEpayTopUpEnabled() bool {
-	return isPaymentComplianceConfirmed()
+	if !isPaymentComplianceConfirmed() {
+		return false
+	}
+	if !isEpayWebhookConfigured() {
+		return false
+	}
+	return len(operation_setting.PayMethods) > 0
 }
 
 func isEpayWebhookConfigured() bool {
