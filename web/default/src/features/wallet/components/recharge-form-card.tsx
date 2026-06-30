@@ -145,7 +145,8 @@ export function RechargeFormCard({
     topupInfo?.enable_alipay_topup ||
     topupInfo?.enable_stripe_topup ||
     enableWaffoTopup ||
-    enableWaffoPancakeTopup
+    enableWaffoPancakeTopup ||
+    topupInfo?.enable_axone_topup === true
   const hasAnyTopup =
     hasConfigurableTopup ||
     enableCreemTopup ||

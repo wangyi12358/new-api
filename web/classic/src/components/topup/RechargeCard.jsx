@@ -134,6 +134,8 @@ const RechargeCard = ({
     !subscriptionLoading && subscriptionPlans.length > 0;
   const regularPayMethods = payMethods || [];
 
+  console.log('regularPayMethods', regularPayMethods);
+
   const axoneTransferAmount = useMemo(() => {
     if (!amountNumber || amountNumber <= 0) {
       return '0.00';
@@ -307,6 +309,7 @@ const RechargeCard = ({
         ) : enableOnlineTopUp ||
           enableAlipayTopUp ||
           enableStripeTopUp ||
+          enableAxoneTopUp ||
           enableCreemTopUp ||
           enableWaffoTopUp ||
           enableWaffoPancakeTopUp ||
@@ -320,7 +323,8 @@ const RechargeCard = ({
                 enableAlipayTopUp ||
                 enableStripeTopUp ||
                 enableWaffoTopUp ||
-                enableWaffoPancakeTopUp) && (
+                enableWaffoPancakeTopUp ||
+                enableAxoneTopUp) && (
                 <Row gutter={12}>
                   <Col xs={24} sm={24} md={24} lg={10} xl={10}>
                     <Form.InputNumber
@@ -331,7 +335,8 @@ const RechargeCard = ({
                         !enableAlipayTopUp &&
                         !enableStripeTopUp &&
                         !enableWaffoTopUp &&
-                        !enableWaffoPancakeTopUp
+                        !enableWaffoPancakeTopUp &&
+                        !enableAxoneTopUp
                       }
                       placeholder={
                         t('充值数量，最低 ') + renderQuotaWithAmount(minTopUp)
@@ -525,7 +530,9 @@ const RechargeCard = ({
               {(enableOnlineTopUp ||
                 enableAlipayTopUp ||
                 enableStripeTopUp ||
-                enableWaffoTopUp) && (
+                enableWaffoTopUp ||
+                enableWaffoPancakeTopUp ||
+                enableAxoneTopUp) && (
                 <Form.Slot
                   label={
                     <div className='flex items-center gap-2'>

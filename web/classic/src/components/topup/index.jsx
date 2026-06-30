@@ -718,6 +718,8 @@ const TopUp = () => {
                 ? data.waffo_min_topup
                 : enableWaffoPancakeTopUp
                   ? data.waffo_pancake_min_topup
+                  : enableAxoneTopUp
+                    ? data.min_topup
                   : 1;
           setEnableOnlineTopUp(enableOnlineTopUp);
           setEnableAlipayTopUp(enableAlipayTopUp);
