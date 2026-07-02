@@ -253,7 +253,6 @@ export type BillingSettings = {
   AxoneBaseURL: string
   AxoneAccount: string
   AxonePassword: string
-  AxoneAccessToken: string
   AxoneWebhookPublicKey: string
   AxoneCurrencies: string
   AxoneFeePercent: number

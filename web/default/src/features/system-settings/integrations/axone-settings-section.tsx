@@ -34,7 +34,6 @@ export interface AxoneSettingsValues {
   AxoneBaseURL: string
   AxoneAccount: string
   AxonePassword: string
-  AxoneAccessToken: string
   AxoneWebhookPublicKey: string
   AxoneCurrencies: string
   AxoneFeePercent: number
@@ -69,7 +68,6 @@ export function AxoneSettingsSection({ defaultValues }: Props) {
         },
         { key: 'AxoneAccount', value: values.AxoneAccount.trim() },
         { key: 'AxonePassword', value: values.AxonePassword },
-        { key: 'AxoneAccessToken', value: values.AxoneAccessToken.trim() },
         { key: 'AxoneWebhookPublicKey', value: values.AxoneWebhookPublicKey },
         { key: 'AxoneCurrencies', value: values.AxoneCurrencies.trim() },
         {
@@ -128,16 +126,6 @@ export function AxoneSettingsSection({ defaultValues }: Props) {
             id='axone-base-url'
             placeholder='https://test-api.alloyx-payment.net'
             {...form.register('AxoneBaseURL')}
-          />
-        </div>
-
-        <div className='grid gap-1.5 sm:col-span-2'>
-          <Label htmlFor='axone-access-token'>{t('Access Token')}</Label>
-          <Input
-            id='axone-access-token'
-            type='password'
-            placeholder={t('Bearer token from AXOne')}
-            {...form.register('AxoneAccessToken')}
           />
         </div>
 

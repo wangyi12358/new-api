@@ -103,7 +103,6 @@ func InitOptionMap() {
 	common.OptionMap["AxoneBaseURL"] = setting.AxoneBaseURL
 	common.OptionMap["AxoneAccount"] = setting.AxoneAccount
 	common.OptionMap["AxonePassword"] = setting.AxonePassword
-	common.OptionMap["AxoneAccessToken"] = setting.AxoneAccessToken
 	common.OptionMap["AxoneWebhookSecret"] = setting.AxoneWebhookSecret
 	common.OptionMap["AxoneWebhookPublicKey"] = setting.AxoneWebhookPublicKey
 	common.OptionMap["AxoneCurrencies"] = setting.AxoneCurrencies
@@ -459,8 +458,6 @@ func updateOptionMap(key string, value string) (err error) {
 		setting.AxoneAccount = value
 	case "AxonePassword":
 		setting.AxonePassword = value
-	case "AxoneAccessToken":
-		setting.AxoneAccessToken = value
 	case "AxoneWebhookSecret":
 		setting.AxoneWebhookSecret = value
 	case "AxoneWebhookPublicKey":

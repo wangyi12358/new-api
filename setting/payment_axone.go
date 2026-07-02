@@ -6,7 +6,6 @@ var AxoneEnabled = false
 var AxoneBaseURL = ""
 var AxoneAccount = ""
 var AxonePassword = ""
-var AxoneAccessToken = ""
 var AxoneWebhookSecret = ""
 var AxoneWebhookPublicKey = ""
 var AxoneCurrencies = "USDT,USDC"

@@ -35,7 +35,6 @@ export default function SettingsPaymentGatewayAxone(props) {
     AxoneBaseURL: '',
     AxoneAccount: '',
     AxonePassword: '',
-    AxoneAccessToken: '',
     AxoneWebhookPublicKey: '',
     AxoneCurrencies: 'USDT,USDC',
     AxoneFeePercent: 0,
@@ -49,7 +48,6 @@ export default function SettingsPaymentGatewayAxone(props) {
         AxoneBaseURL: props.options.AxoneBaseURL || '',
         AxoneAccount: props.options.AxoneAccount || '',
         AxonePassword: props.options.AxonePassword || '',
-        AxoneAccessToken: props.options.AxoneAccessToken || '',
         AxoneWebhookPublicKey: props.options.AxoneWebhookPublicKey || '',
         AxoneCurrencies: props.options.AxoneCurrencies || 'USDT,USDC',
         AxoneFeePercent: Number(props.options.AxoneFeePercent) || 0,
@@ -82,10 +80,6 @@ export default function SettingsPaymentGatewayAxone(props) {
         {
           key: 'AxonePassword',
           value: inputs.AxonePassword || '',
-        },
-        {
-          key: 'AxoneAccessToken',
-          value: (inputs.AxoneAccessToken || '').trim(),
         },
         {
           key: 'AxoneWebhookPublicKey',
@@ -164,15 +158,6 @@ export default function SettingsPaymentGatewayAxone(props) {
                 field='AxoneBaseURL'
                 label={t('Base URL')}
                 placeholder='https://test-api.alloyx-payment.net'
-              />
-            </Col>
-
-            <Col xs={24} md={12}>
-              <Form.Input
-                mode='password'
-                field='AxoneAccessToken'
-                label={t('Access Token')}
-                placeholder={t('请输入 AXOne Access Token')}
               />
             </Col>
 

@@ -165,7 +165,6 @@ const BILLING_SECTIONS = [
           AxoneBaseURL: settings.AxoneBaseURL ?? '',
           AxoneAccount: settings.AxoneAccount ?? '',
           AxonePassword: settings.AxonePassword ?? '',
-          AxoneAccessToken: settings.AxoneAccessToken ?? '',
           AxoneWebhookPublicKey: settings.AxoneWebhookPublicKey ?? '',
           AxoneCurrencies: settings.AxoneCurrencies ?? 'USDT,USDC',
           AxoneFeePercent: settings.AxoneFeePercent ?? 0,

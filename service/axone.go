@@ -67,14 +67,13 @@ type AxonePaymentOrderData struct {
 }
 
 type AxoneClient struct {
-	configKey   string
-	baseURL     string
-	account     string
-	password    string
-	accessToken string
-	httpClient  *http.Client
-	tokenMu     sync.Mutex
-	token       axoneTokenState
+	configKey  string
+	baseURL    string
+	account    string
+	password   string
+	httpClient *http.Client
+	tokenMu    sync.Mutex
+	token      axoneTokenState
 }
 
 var (
@@ -86,8 +85,7 @@ func GetAxoneClient() *AxoneClient {
 	baseURL := strings.TrimRight(strings.TrimSpace(setting.AxoneBaseURL), "/")
 	account := strings.TrimSpace(setting.AxoneAccount)
 	password := setting.AxonePassword
-	accessToken := strings.TrimSpace(setting.AxoneAccessToken)
-	configKey := baseURL + "\n" + account + "\n" + password + "\n" + accessToken
+	configKey := baseURL + "\n" + account + "\n" + password
 
 	axoneClientMu.Lock()
 	defer axoneClientMu.Unlock()
@@ -98,12 +96,11 @@ func GetAxoneClient() *AxoneClient {
 	}
 
 	axoneClient = &AxoneClient{
-		configKey:   configKey,
-		baseURL:     baseURL,
-		account:     account,
-		password:    password,
-		accessToken: accessToken,
-		httpClient:  GetHttpClient(),
+		configKey:  configKey,
+		baseURL:    baseURL,
+		account:    account,
+		password:   password,
+		httpClient: GetHttpClient(),
 	}
 	return axoneClient
 }
@@ -163,6 +160,10 @@ func (c *AxoneClient) CreatePaymentOrder(ctx context.Context, request AxonePayme
 	if err := c.ensurePaymentOrderReady(); err != nil {
 		return nil, err
 	}
+	accessToken, err := c.ensureAccessToken(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	request.OrderNo = strings.TrimSpace(request.OrderNo)
 	request.Amount = strings.TrimSpace(request.Amount)
@@ -171,7 +172,7 @@ func (c *AxoneClient) CreatePaymentOrder(ctx context.Context, request AxonePayme
 	request.PaymentWalletAddress = strings.TrimSpace(request.PaymentWalletAddress)
 
 	var resp axoneResponse[AxonePaymentOrderData]
-	if err := c.doSignedJSONRequest(ctx, http.MethodPost, "/api/v1/payment/orders", request, c.accessToken, &resp); err != nil {
+	if err := c.doSignedJSONRequest(ctx, http.MethodPost, "/api/v1/payment/orders", request, accessToken, &resp); err != nil {
 		return nil, err
 	}
 	if resp.Code != 0 {
@@ -187,13 +188,11 @@ func (c *AxoneClient) ensureReady() error {
 	if c.baseURL == "" {
 		return fmt.Errorf("axone base url is empty")
 	}
-	if c.accessToken == "" {
-		if c.account == "" {
-			return fmt.Errorf("axone account is empty")
-		}
-		if c.password == "" {
-			return fmt.Errorf("axone password is empty")
-		}
+	if c.account == "" {
+		return fmt.Errorf("axone account is empty")
+	}
+	if c.password == "" {
+		return fmt.Errorf("axone password is empty")
 	}
 	if c.httpClient == nil {
 		c.httpClient = http.DefaultClient
@@ -202,23 +201,10 @@ func (c *AxoneClient) ensureReady() error {
 }
 
 func (c *AxoneClient) ensurePaymentOrderReady() error {
-	if c.baseURL == "" {
-		return fmt.Errorf("axone base url is empty")
-	}
-	if c.accessToken == "" {
-		return fmt.Errorf("axone access token is empty")
-	}
-	if c.httpClient == nil {
-		c.httpClient = http.DefaultClient
-	}
-	return nil
+	return c.ensureReady()
 }
 
 func (c *AxoneClient) ensureAccessToken(ctx context.Context) (string, error) {
-	if c.accessToken != "" {
-		return c.accessToken, nil
-	}
-
 	c.tokenMu.Lock()
 	defer c.tokenMu.Unlock()
 
@@ -254,6 +240,9 @@ func (c *AxoneClient) loginLocked(ctx context.Context) error {
 	if resp.Code != 0 {
 		return fmt.Errorf("axone login failed: %s", resp.Message)
 	}
+	if strings.TrimSpace(resp.Data.AccessToken) == "" {
+		return fmt.Errorf("axone login returned empty access token")
+	}
 	c.token = axoneTokenState{
 		AccessToken:           resp.Data.AccessToken,
 		RefreshToken:          resp.Data.RefreshToken,
@@ -274,6 +263,9 @@ func (c *AxoneClient) refreshLocked(ctx context.Context) error {
 	}
 	if resp.Code != 0 {
 		return fmt.Errorf("axone refresh failed: %s", resp.Message)
+	}
+	if strings.TrimSpace(resp.Data.AccessToken) == "" || strings.TrimSpace(resp.Data.RefreshToken) == "" {
+		return fmt.Errorf("axone refresh returned empty token")
 	}
 	c.token = axoneTokenState{
 		AccessToken:           resp.Data.AccessToken,
