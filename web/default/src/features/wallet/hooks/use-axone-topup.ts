@@ -53,13 +53,19 @@ export function useAxoneTopup(enabled: boolean) {
   }, [enabled])
 
   const generateAddress = useCallback(
-    async (amount: number, currency: string, chainID: string) => {
+    async (
+      amount: number,
+      currency: string,
+      chainID: string,
+      paymentWalletAddress: string
+    ) => {
       setGenerating(true)
       try {
         const response = await requestAxoneAddress({
           amount,
           currency,
           chain_id: chainID,
+          payment_wallet_address: paymentWalletAddress,
         })
         if (isApiSuccess(response) && response.data) {
           setAddressData(response.data)

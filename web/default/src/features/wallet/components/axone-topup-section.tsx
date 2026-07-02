@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next'
 import { CopyButton } from '@/components/copy-button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -46,6 +47,7 @@ export function AxoneTopupSection({
   const { t } = useTranslation()
   const [selectedCurrency, setSelectedCurrency] = useState('')
   const [selectedChainID, setSelectedChainID] = useState('')
+  const [paymentWalletAddress, setPaymentWalletAddress] = useState('')
   const [nowMs, setNowMs] = useState(() => Date.now())
   const {
     chains,
@@ -75,7 +77,7 @@ export function AxoneTopupSection({
 
   useEffect(() => {
     setAddressData(null)
-  }, [selectedCurrency, selectedChainID, setAddressData])
+  }, [selectedCurrency, selectedChainID, paymentWalletAddress, setAddressData])
 
   useEffect(() => {
     if (!addressData?.expires_at) {
@@ -92,10 +94,15 @@ export function AxoneTopupSection({
   }
 
   const handleGenerateAddress = async () => {
-    if (!selectedCurrency || !selectedChainID || amount <= 0) {
+    if (!selectedCurrency || !selectedChainID || !paymentWalletAddress.trim() || amount <= 0) {
       return
     }
-    await generateAddress(amount, selectedCurrency, selectedChainID)
+    await generateAddress(
+      amount,
+      selectedCurrency,
+      selectedChainID,
+      paymentWalletAddress
+    )
   }
 
   const remainingSeconds = Math.max(
@@ -104,6 +111,7 @@ export function AxoneTopupSection({
   )
   const remainingMinutes = Math.floor(remainingSeconds / 60)
   const remainingDisplaySeconds = remainingSeconds % 60
+  const hasExpireTime = Number(addressData?.expires_at || 0) > 0
 
   return (
     <div className='space-y-4'>
@@ -117,7 +125,7 @@ export function AxoneTopupSection({
       <Alert>
         <AlertDescription>
           {t(
-            'Choose a currency and chain, generate a payment order, and transfer funds to the wallet address.'
+            'Choose a currency and chain, enter the wallet address you will transfer from, generate a payment order, and transfer funds to the wallet address.'
           )}
         </AlertDescription>
       </Alert>
@@ -163,7 +171,7 @@ export function AxoneTopupSection({
         </div>
       </div>
 
-      <div className='grid gap-3 sm:grid-cols-2'>
+      <div className='grid gap-3 sm:grid-cols-3'>
         <div className='space-y-2'>
           <Label>{t('Currency')}</Label>
           <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
@@ -228,6 +236,20 @@ export function AxoneTopupSection({
             </p>
           )}
         </div>
+
+        <div className='space-y-2'>
+          <Label>{t('Payment Wallet Address')}</Label>
+          <Input
+            value={paymentWalletAddress}
+            onChange={(event) => setPaymentWalletAddress(event.target.value)}
+            placeholder={t('Enter the wallet address you will transfer from')}
+          />
+          <p className='text-muted-foreground text-xs'>
+            {t(
+              'AXOne matches the source wallet address on-chain, so please enter the exact wallet address you will use to transfer.'
+            )}
+          </p>
+        </div>
       </div>
 
       <Button
@@ -239,6 +261,7 @@ export function AxoneTopupSection({
           amount <= 0 ||
           !selectedCurrency ||
           !selectedChainID ||
+          !paymentWalletAddress.trim() ||
           normalizedCurrencies.length === 0
         }
         className='w-full sm:w-auto'
@@ -271,6 +294,12 @@ export function AxoneTopupSection({
               <span className='text-muted-foreground'>{t('Order No')}: </span>
               <span className='font-mono'>{addressData.trade_no}</span>
             </div>
+            {addressData.axone_order_no && (
+              <div>
+                <span className='text-muted-foreground'>{t('AXOne Order No')}: </span>
+                <span className='font-mono'>{addressData.axone_order_no}</span>
+              </div>
+            )}
             <div>
               <span className='text-muted-foreground'>{t('Payment')}: </span>
               <span>{addressData.base_payment_money || '-'}</span>
@@ -300,14 +329,16 @@ export function AxoneTopupSection({
               <span className='text-muted-foreground'>{t('Credit Amount')}: </span>
               <span>{addressData.amount}</span>
             </div>
-            <div>
-              <span className='text-muted-foreground'>{t('Expires In')}: </span>
-              <span>
-                {remainingMinutes}:{remainingDisplaySeconds
-                  .toString()
-                  .padStart(2, '0')}
-              </span>
-            </div>
+            {hasExpireTime && (
+              <div>
+                <span className='text-muted-foreground'>{t('Expires In')}: </span>
+                <span>
+                  {remainingMinutes}:{remainingDisplaySeconds
+                    .toString()
+                    .padStart(2, '0')}
+                </span>
+              </div>
+            )}
           </div>
           <div className='break-all font-mono text-sm'>{addressData.address}</div>
         </div>

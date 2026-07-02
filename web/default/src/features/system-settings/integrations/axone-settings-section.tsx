@@ -24,6 +24,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { SettingsSwitchField } from '../components/settings-form-layout'
 import { SettingsPageActionsPortal } from '../components/settings-page-context'
 import { useUpdateOption } from '../hooks/use-update-option'
@@ -33,6 +34,8 @@ export interface AxoneSettingsValues {
   AxoneBaseURL: string
   AxoneAccount: string
   AxonePassword: string
+  AxoneAccessToken: string
+  AxoneWebhookPublicKey: string
   AxoneCurrencies: string
   AxoneFeePercent: number
 }
@@ -66,6 +69,8 @@ export function AxoneSettingsSection({ defaultValues }: Props) {
         },
         { key: 'AxoneAccount', value: values.AxoneAccount.trim() },
         { key: 'AxonePassword', value: values.AxonePassword },
+        { key: 'AxoneAccessToken', value: values.AxoneAccessToken.trim() },
+        { key: 'AxoneWebhookPublicKey', value: values.AxoneWebhookPublicKey },
         { key: 'AxoneCurrencies', value: values.AxoneCurrencies.trim() },
         {
           key: 'AxoneFeePercent',
@@ -96,7 +101,7 @@ export function AxoneSettingsSection({ defaultValues }: Props) {
         <h3 className='text-lg font-medium'>{t('AXOne Stablecoin Wallet')}</h3>
         <p className='text-muted-foreground text-sm'>
           {t(
-            'Configure the AXOne hosted wallet account used to generate deposit addresses for stablecoin top-ups.'
+            'Configure the AXOne payment order API used to create stablecoin top-up orders.'
           )}
         </p>
       </div>
@@ -104,7 +109,7 @@ export function AxoneSettingsSection({ defaultValues }: Props) {
       <Alert>
         <AlertDescription className='text-xs'>
           {t(
-            'new-api logs in to AXOne with your configured account, fetches supported chains live, and generates wallet addresses for the selected currency and chain.'
+            'AXOne sends payment success notifications to /api/axone/webhook. Configure this path as the merchant callback URL in AXOne.'
           )}
         </AlertDescription>
       </Alert>
@@ -123,6 +128,26 @@ export function AxoneSettingsSection({ defaultValues }: Props) {
             id='axone-base-url'
             placeholder='https://test-api.alloyx-payment.net'
             {...form.register('AxoneBaseURL')}
+          />
+        </div>
+
+        <div className='grid gap-1.5 sm:col-span-2'>
+          <Label htmlFor='axone-access-token'>{t('Access Token')}</Label>
+          <Input
+            id='axone-access-token'
+            type='password'
+            placeholder={t('Bearer token from AXOne')}
+            {...form.register('AxoneAccessToken')}
+          />
+        </div>
+
+        <div className='grid gap-1.5 sm:col-span-2'>
+          <Label htmlFor='axone-webhook-public-key'>{t('Webhook public key')}</Label>
+          <Textarea
+            id='axone-webhook-public-key'
+            rows={7}
+            placeholder={t('AXOne public key used to verify webhook signatures')}
+            {...form.register('AxoneWebhookPublicKey')}
           />
         </div>
 

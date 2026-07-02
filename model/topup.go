@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/logger"
@@ -12,23 +13,25 @@ import (
 )
 
 type TopUp struct {
-	Id              int     `json:"id"`
-	UserId          int     `json:"user_id" gorm:"index"`
-	Amount          int64   `json:"amount"`
-	Money           float64 `json:"money"`
-	Fee             float64 `json:"fee"`
-	TradeNo         string  `json:"trade_no" gorm:"unique;type:varchar(255);index"`
-	PaymentMethod   string  `json:"payment_method" gorm:"type:varchar(50)"`
-	PaymentProvider string  `json:"payment_provider" gorm:"type:varchar(50);default:''"`
-	AxoneCurrency   string  `json:"axone_currency" gorm:"type:varchar(20);index"`
-	AxoneChainID    string  `json:"axone_chain_id" gorm:"type:varchar(100);index"`
-	AxoneAddress    string  `json:"axone_address" gorm:"type:varchar(255)"`
-	ExpireTime      int64   `json:"expire_time" gorm:"index"`
-	TxHash          string  `json:"tx_hash" gorm:"type:varchar(255)"`
-	ProviderPayload string  `json:"provider_payload" gorm:"type:text"`
-	CreateTime      int64   `json:"create_time"`
-	CompleteTime    int64   `json:"complete_time"`
-	Status          string  `json:"status"`
+	Id                        int     `json:"id"`
+	UserId                    int     `json:"user_id" gorm:"index"`
+	Amount                    int64   `json:"amount"`
+	Money                     float64 `json:"money"`
+	Fee                       float64 `json:"fee"`
+	TradeNo                   string  `json:"trade_no" gorm:"unique;type:varchar(255);index"`
+	PaymentMethod             string  `json:"payment_method" gorm:"type:varchar(50)"`
+	PaymentProvider           string  `json:"payment_provider" gorm:"type:varchar(50);default:''"`
+	AxoneCurrency             string  `json:"axone_currency" gorm:"type:varchar(20);index"`
+	AxoneChainID              string  `json:"axone_chain_id" gorm:"type:varchar(100);index"`
+	AxoneAddress              string  `json:"axone_address" gorm:"type:varchar(255)"`
+	AxoneOrderNo              string  `json:"axone_order_no" gorm:"type:varchar(255);index"`
+	AxonePaymentWalletAddress string  `json:"axone_payment_wallet_address" gorm:"type:varchar(255);index"`
+	ExpireTime                int64   `json:"expire_time" gorm:"index"`
+	TxHash                    string  `json:"tx_hash" gorm:"type:varchar(255)"`
+	ProviderPayload           string  `json:"provider_payload" gorm:"type:text"`
+	CreateTime                int64   `json:"create_time"`
+	CompleteTime              int64   `json:"complete_time"`
+	Status                    string  `json:"status"`
 }
 
 const (
@@ -113,39 +116,6 @@ func UpdatePendingTopUpStatus(tradeNo string, expectedPaymentProvider string, ta
 		topUp.Status = targetStatus
 		return tx.Save(topUp).Error
 	})
-}
-
-func ExpirePendingAxoneTopUps(targetTime int64) error {
-	return DB.Model(&TopUp{}).
-		Where("payment_provider = ? AND status = ? AND expire_time > 0 AND expire_time <= ?",
-			PaymentProviderAxone, common.TopUpStatusPending, targetTime).
-		Update("status", common.TopUpStatusExpired).Error
-}
-
-func ExpireUserPendingAxoneTopUps(userId int, targetTime int64) error {
-	return DB.Model(&TopUp{}).
-		Where("user_id = ? AND payment_provider = ? AND status = ? AND expire_time > ?",
-			userId, PaymentProviderAxone, common.TopUpStatusPending, targetTime).
-		Updates(map[string]any{
-			"status":      common.TopUpStatusExpired,
-			"expire_time": targetTime,
-		}).Error
-}
-
-func IsActiveAxoneTopUpMoneyInUse(currency string, chainID string, money float64, targetTime int64) (bool, error) {
-	var count int64
-	err := DB.Model(&TopUp{}).
-		Where("payment_provider = ? AND status = ? AND axone_currency = ? AND axone_chain_id = ? AND expire_time > ? AND money >= ? AND money < ?",
-			PaymentProviderAxone,
-			common.TopUpStatusPending,
-			currency,
-			chainID,
-			targetTime,
-			money-0.0000001,
-			money+0.0000001,
-		).
-		Count(&count).Error
-	return count > 0, err
 }
 
 func Recharge(referenceId string, customerId string, callerIp string) (err error) {
@@ -257,6 +227,93 @@ func RechargeAlipay(referenceId string, callerIp string) (err error) {
 
 	if quotaToAdd > 0 {
 		RecordTopupLog(topUp.UserId, fmt.Sprintf("使用支付宝充值成功，充值额度: %v，支付金额：%.2f", logger.FormatQuota(quotaToAdd), topUp.Money), callerIp, topUp.PaymentMethod, PaymentMethodAlipay)
+	}
+
+	return nil
+}
+
+func RechargeAxone(referenceId string, axoneOrderNo string, amount string, currency string, payAddress string, paymentWalletAddress string, payload string, callerIp string) (err error) {
+	if referenceId == "" {
+		return errors.New("未提供支付单号")
+	}
+
+	callbackAmount, err := decimal.NewFromString(strings.TrimSpace(amount))
+	if err != nil || !callbackAmount.IsPositive() {
+		return errors.New("无效的支付金额")
+	}
+
+	var quotaToAdd int
+	topUp := &TopUp{}
+
+	refCol := "`trade_no`"
+	if common.UsingPostgreSQL {
+		refCol = `"trade_no"`
+	}
+
+	err = DB.Transaction(func(tx *gorm.DB) error {
+		err := tx.Set("gorm:query_option", "FOR UPDATE").Where(refCol+" = ?", referenceId).First(topUp).Error
+		if err != nil {
+			return errors.New("充值订单不存在")
+		}
+
+		if topUp.PaymentProvider != PaymentProviderAxone {
+			return ErrPaymentMethodMismatch
+		}
+
+		if topUp.Status == common.TopUpStatusSuccess {
+			return nil
+		}
+
+		if topUp.Status != common.TopUpStatusPending {
+			return errors.New("充值订单状态错误")
+		}
+
+		expectedAmount := decimal.NewFromFloat(topUp.Money).Round(2)
+		if !expectedAmount.Equal(callbackAmount.Round(2)) {
+			return errors.New("支付金额不匹配")
+		}
+
+		if topUp.AxoneOrderNo != "" && axoneOrderNo != "" && topUp.AxoneOrderNo != axoneOrderNo {
+			return errors.New("AXOne 订单号不匹配")
+		}
+
+		if !strings.EqualFold(strings.TrimSpace(topUp.AxoneCurrency), strings.TrimSpace(currency)) {
+			return errors.New("支付币种不匹配")
+		}
+
+		if topUp.AxoneAddress != "" && !strings.EqualFold(strings.TrimSpace(topUp.AxoneAddress), strings.TrimSpace(payAddress)) {
+			return errors.New("收款地址不匹配")
+		}
+
+		if topUp.AxonePaymentWalletAddress != "" && !strings.EqualFold(strings.TrimSpace(topUp.AxonePaymentWalletAddress), strings.TrimSpace(paymentWalletAddress)) {
+			return errors.New("付款钱包地址不匹配")
+		}
+
+		quotaToAdd = int(decimal.NewFromInt(topUp.Amount).Mul(decimal.NewFromFloat(common.QuotaPerUnit)).IntPart())
+		if quotaToAdd <= 0 {
+			return errors.New("无效的充值额度")
+		}
+
+		if topUp.AxoneOrderNo == "" {
+			topUp.AxoneOrderNo = strings.TrimSpace(axoneOrderNo)
+		}
+		topUp.ProviderPayload = payload
+		topUp.CompleteTime = common.GetTimestamp()
+		topUp.Status = common.TopUpStatusSuccess
+		if err := tx.Save(topUp).Error; err != nil {
+			return err
+		}
+
+		return tx.Model(&User{}).Where("id = ?", topUp.UserId).Update("quota", gorm.Expr("quota + ?", quotaToAdd)).Error
+	})
+
+	if err != nil {
+		common.SysError("axone topup failed: " + err.Error())
+		return errors.New("充值失败，请稍后重试")
+	}
+
+	if quotaToAdd > 0 {
+		RecordTopupLog(topUp.UserId, fmt.Sprintf("使用稳定币充值成功，充值额度: %v，支付金额：%.2f", logger.FormatQuota(quotaToAdd), topUp.Money), callerIp, topUp.PaymentMethod, PaymentProviderAxone)
 	}
 
 	return nil

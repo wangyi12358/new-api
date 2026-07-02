@@ -37,8 +37,9 @@ import {
   Tabs,
   TabPane,
   Modal,
+  Input,
 } from '@douyinfe/semi-ui';
-import { SiAlipay, SiWechat, SiStripe } from 'react-icons/si';
+import { SiAlipay, SiWechat, SiStripe, SiTether } from 'react-icons/si';
 import {
   CreditCard,
   Coins,
@@ -71,8 +72,11 @@ const RechargeCard = ({
   axoneChains,
   selectedAxoneChain,
   setSelectedAxoneChain,
+  axonePaymentWalletAddress,
+  setAxonePaymentWalletAddress,
   axoneAddress,
   axoneTradeNo,
+  axoneOrderNo,
   axoneBasePaymentMoney,
   axoneFee,
   axonePaymentMoney,
@@ -134,7 +138,7 @@ const RechargeCard = ({
     !subscriptionLoading && subscriptionPlans.length > 0;
   const regularPayMethods = payMethods || [];
 
-  console.log('regularPayMethods', regularPayMethods);
+  console.log('presetAmounts', presetAmounts);
 
   const axoneTransferAmount = useMemo(() => {
     if (!amountNumber || amountNumber <= 0) {
@@ -152,6 +156,7 @@ const RechargeCard = ({
   const selectedAxoneChainLabel = selectedAxoneChainInfo
     ? `${selectedAxoneChainInfo.chain_name} (${selectedAxoneChainInfo.symbol})`
     : selectedAxoneChain;
+
   const [axoneNowMs, setAxoneNowMs] = useState(() => Date.now());
 
   useEffect(() => {
@@ -498,7 +503,7 @@ const RechargeCard = ({
                             <Button
                               theme='outline'
                               type='tertiary'
-                              icon={<Coins size={18} />}
+                              icon={<SiTether size={18} color='#26A17B' />}
                               onClick={() => setAxoneModalOpen(true)}
                               className='!rounded-lg !px-4 !py-2'
                             >
@@ -515,7 +520,7 @@ const RechargeCard = ({
                         <Button
                           theme='outline'
                           type='tertiary'
-                          icon={<Coins size={18} />}
+                          icon={<SiTether size={18} color='#26A17B' />}
                           onClick={() => setAxoneModalOpen(true)}
                           className='!rounded-lg !px-4 !py-2'
                         >
@@ -644,6 +649,11 @@ const RechargeCard = ({
                                 margin: '4px 0',
                               }}
                             >
+                              {/* {t('实付')} {symbol}
+                              {displayActualPay.toFixed(2)}，
+                              {hasDiscount
+                                ? `${t('节省')} ${symbol}${displaySave.toFixed(2)}`
+                                : `${t('节省')} ${symbol}0.00`} */}
                               {t('实付')} {symbol}
                               {displayActualPay.toFixed(2)}，
                               {hasDiscount
@@ -768,7 +778,7 @@ const RechargeCard = ({
             </div>
           </Card>
 
-          <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+          <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
             <div className='space-y-1.5'>
               <Text strong>{t('选择币种')}</Text>
               <Select
@@ -816,9 +826,21 @@ const RechargeCard = ({
               {!axoneChainLoading &&
                 (!axoneChains || axoneChains.length === 0) && (
                   <Text type='tertiary' size='small'>
-                    {t('未加载到可用链，请刷新链列表或检查 AXOne 配置')}
+                    {t('未加载到可用链，请刷新链列表或检查稳定币配置')}
                   </Text>
                 )}
+            </div>
+            <div className='space-y-1.5'>
+              <Text strong>{t('付款钱包地址')}</Text>
+              <Input
+                placeholder={t('请输入实际转出的付款钱包地址')}
+                value={axonePaymentWalletAddress}
+                onChange={(value) => setAxonePaymentWalletAddress(value)}
+                style={{ width: '100%' }}
+              />
+              <Text type='tertiary' size='small'>
+                {t('AXOne 会按链上付款地址匹配订单，请填写你实际转账使用的钱包地址。')}
+              </Text>
             </div>
           </div>
 
@@ -830,7 +852,8 @@ const RechargeCard = ({
             disabled={
               !selectedAxoneCurrency ||
               !selectedAxoneChain ||
-              axoneChainLoading
+              axoneChainLoading ||
+              !axonePaymentWalletAddress?.trim()
             }
             onClick={generateAxoneAddress}
           >
@@ -868,6 +891,9 @@ const RechargeCard = ({
                     <Text type='tertiary' size='small' className='mt-1 block'>
                       {selectedAxoneChainLabel}
                     </Text>
+                    <Text type='tertiary' size='small' className='mt-1 block'>
+                      {t('付款钱包地址')}：{axonePaymentWalletAddress}
+                    </Text>
                   </div>
 
                   {axoneTradeNo ? (
@@ -883,6 +909,19 @@ const RechargeCard = ({
                           {axoneTradeNo}
                         </Text>
                       </div>
+                      {axoneOrderNo ? (
+                        <div className='flex items-start justify-between gap-3'>
+                          <Text type='tertiary' size='small' className='shrink-0'>
+                            {t('AXOne 订单号')}
+                          </Text>
+                          <Text
+                            size='small'
+                            style={{ wordBreak: 'break-all', textAlign: 'right' }}
+                          >
+                            {axoneOrderNo}
+                          </Text>
+                        </div>
+                      ) : null}
                       {axoneExpireAt > 0 ? (
                         <div className='flex items-start justify-between gap-3'>
                           <Text type='tertiary' size='small' className='shrink-0'>

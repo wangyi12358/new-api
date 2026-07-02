@@ -103,6 +103,9 @@ func InitOptionMap() {
 	common.OptionMap["AxoneBaseURL"] = setting.AxoneBaseURL
 	common.OptionMap["AxoneAccount"] = setting.AxoneAccount
 	common.OptionMap["AxonePassword"] = setting.AxonePassword
+	common.OptionMap["AxoneAccessToken"] = setting.AxoneAccessToken
+	common.OptionMap["AxoneWebhookSecret"] = setting.AxoneWebhookSecret
+	common.OptionMap["AxoneWebhookPublicKey"] = setting.AxoneWebhookPublicKey
 	common.OptionMap["AxoneCurrencies"] = setting.AxoneCurrencies
 	common.OptionMap["AxoneFeePercent"] = strconv.FormatFloat(setting.GetAxoneFeePercent(), 'f', -1, 64)
 	common.OptionMap["WaffoEnabled"] = strconv.FormatBool(setting.WaffoEnabled)
@@ -456,6 +459,12 @@ func updateOptionMap(key string, value string) (err error) {
 		setting.AxoneAccount = value
 	case "AxonePassword":
 		setting.AxonePassword = value
+	case "AxoneAccessToken":
+		setting.AxoneAccessToken = value
+	case "AxoneWebhookSecret":
+		setting.AxoneWebhookSecret = value
+	case "AxoneWebhookPublicKey":
+		setting.AxoneWebhookPublicKey = value
 	case "AxoneCurrencies":
 		setting.AxoneCurrencies = value
 	case "AxoneFeePercent":

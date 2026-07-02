@@ -117,8 +117,8 @@ func isAxoneTopUpEnabled() bool {
 	}
 	return setting.AxoneEnabled &&
 		strings.TrimSpace(setting.AxoneBaseURL) != "" &&
-		strings.TrimSpace(setting.AxoneAccount) != "" &&
-		strings.TrimSpace(setting.AxonePassword) != "" &&
+		strings.TrimSpace(setting.AxoneAccessToken) != "" &&
+		strings.TrimSpace(setting.AxoneWebhookPublicKey) != "" &&
 		len(setting.GetAxoneCurrencies()) > 0
 }
 

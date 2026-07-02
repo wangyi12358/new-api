@@ -129,7 +129,8 @@ export interface AxoneChain {
 export interface AxoneAddressRequest {
   amount: number
   currency: string
-  chain_id: string
+  payment_wallet_address: string
+  chain_id?: string
 }
 
 export interface AxoneAddressData {
@@ -141,9 +142,11 @@ export interface AxoneAddressData {
   payment_money: string
   display_payment_money?: string
   currency: string
-  chain_id: string
+  chain_id?: string
   address: string
-  expires_at: number
+  axone_order_no?: string
+  payment_wallet_address?: string
+  expires_at?: number
   status: TopupStatus
 }
 
@@ -310,6 +313,10 @@ export interface TopupRecord {
   payment_provider?: string
   /** AXOne currency */
   axone_currency?: string
+  /** AXOne order number */
+  axone_order_no?: string
+  /** AXOne payment source wallet address */
+  axone_payment_wallet_address?: string
   /** AXOne chain ID */
   axone_chain_id?: string
   /** AXOne deposit address */

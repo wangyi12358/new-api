@@ -3,7 +3,10 @@ package service
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
 	"crypto/md5"
+	"crypto/sha512"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -46,14 +49,32 @@ type axoneChainListData struct {
 	Data []AxoneChain `json:"data"`
 }
 
+type AxonePaymentOrderRequest struct {
+	OrderNo              string `json:"orderNo"`
+	Amount               string `json:"amount"`
+	Currency             string `json:"currency"`
+	Chain                string `json:"chain"`
+	PaymentWalletAddress string `json:"paymentWalletAddress"`
+}
+
+type AxonePaymentOrderData struct {
+	OrderNo      string `json:"orderNo"`
+	AxoneOrderNo string `json:"axoneOrderNo"`
+	Status       string `json:"status"`
+	Amount       string `json:"amount"`
+	Currency     string `json:"currency"`
+	PayAddress   string `json:"payAddress"`
+}
+
 type AxoneClient struct {
-	configKey  string
-	baseURL    string
-	account    string
-	password   string
-	httpClient *http.Client
-	tokenMu    sync.Mutex
-	token      axoneTokenState
+	configKey   string
+	baseURL     string
+	account     string
+	password    string
+	accessToken string
+	httpClient  *http.Client
+	tokenMu     sync.Mutex
+	token       axoneTokenState
 }
 
 var (
@@ -65,7 +86,8 @@ func GetAxoneClient() *AxoneClient {
 	baseURL := strings.TrimRight(strings.TrimSpace(setting.AxoneBaseURL), "/")
 	account := strings.TrimSpace(setting.AxoneAccount)
 	password := setting.AxonePassword
-	configKey := baseURL + "\n" + account + "\n" + password
+	accessToken := strings.TrimSpace(setting.AxoneAccessToken)
+	configKey := baseURL + "\n" + account + "\n" + password + "\n" + accessToken
 
 	axoneClientMu.Lock()
 	defer axoneClientMu.Unlock()
@@ -76,11 +98,12 @@ func GetAxoneClient() *AxoneClient {
 	}
 
 	axoneClient = &AxoneClient{
-		configKey:  configKey,
-		baseURL:    baseURL,
-		account:    account,
-		password:   password,
-		httpClient: GetHttpClient(),
+		configKey:   configKey,
+		baseURL:     baseURL,
+		account:     account,
+		password:    password,
+		accessToken: accessToken,
+		httpClient:  GetHttpClient(),
 	}
 	return axoneClient
 }
@@ -136,15 +159,54 @@ func (c *AxoneClient) GetWalletAddress(ctx context.Context, currency string, cha
 	return address, nil
 }
 
+func (c *AxoneClient) CreatePaymentOrder(ctx context.Context, request AxonePaymentOrderRequest) (*AxonePaymentOrderData, error) {
+	if err := c.ensurePaymentOrderReady(); err != nil {
+		return nil, err
+	}
+
+	request.OrderNo = strings.TrimSpace(request.OrderNo)
+	request.Amount = strings.TrimSpace(request.Amount)
+	request.Currency = strings.ToUpper(strings.TrimSpace(request.Currency))
+	request.Chain = strings.TrimSpace(request.Chain)
+	request.PaymentWalletAddress = strings.TrimSpace(request.PaymentWalletAddress)
+
+	var resp axoneResponse[AxonePaymentOrderData]
+	if err := c.doSignedJSONRequest(ctx, http.MethodPost, "/api/v1/payment/orders", request, c.accessToken, &resp); err != nil {
+		return nil, err
+	}
+	if resp.Code != 0 {
+		return nil, fmt.Errorf("axone create payment order failed: %s", resp.Message)
+	}
+	if strings.TrimSpace(resp.Data.PayAddress) == "" {
+		return nil, fmt.Errorf("axone returned empty pay address")
+	}
+	return &resp.Data, nil
+}
+
 func (c *AxoneClient) ensureReady() error {
 	if c.baseURL == "" {
 		return fmt.Errorf("axone base url is empty")
 	}
-	if c.account == "" {
-		return fmt.Errorf("axone account is empty")
+	if c.accessToken == "" {
+		if c.account == "" {
+			return fmt.Errorf("axone account is empty")
+		}
+		if c.password == "" {
+			return fmt.Errorf("axone password is empty")
+		}
 	}
-	if c.password == "" {
-		return fmt.Errorf("axone password is empty")
+	if c.httpClient == nil {
+		c.httpClient = http.DefaultClient
+	}
+	return nil
+}
+
+func (c *AxoneClient) ensurePaymentOrderReady() error {
+	if c.baseURL == "" {
+		return fmt.Errorf("axone base url is empty")
+	}
+	if c.accessToken == "" {
+		return fmt.Errorf("axone access token is empty")
 	}
 	if c.httpClient == nil {
 		c.httpClient = http.DefaultClient
@@ -153,6 +215,10 @@ func (c *AxoneClient) ensureReady() error {
 }
 
 func (c *AxoneClient) ensureAccessToken(ctx context.Context) (string, error) {
+	if c.accessToken != "" {
+		return c.accessToken, nil
+	}
+
 	c.tokenMu.Lock()
 	defer c.tokenMu.Unlock()
 
@@ -254,6 +320,52 @@ func (c *AxoneClient) doJSONRequest(ctx context.Context, method string, path str
 	}
 
 	return common.DecodeJson(resp.Body, target)
+}
+
+func (c *AxoneClient) doSignedJSONRequest(ctx context.Context, method string, path string, payload any, accessToken string, target any) error {
+	fullURL := c.baseURL + path
+
+	bodyBytes, err := common.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, fullURL, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+
+	timestamp := fmt.Sprintf("%d", time.Now().UnixMilli())
+	req.Header.Set("X-Timestamp", timestamp)
+	req.Header.Set("X-Signature", buildAxoneSignature(timestamp, bodyBytes, setting.AxoneWebhookSecret))
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= http.StatusBadRequest {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("axone request failed: status=%d body=%s", resp.StatusCode, strings.TrimSpace(string(bodyBytes)))
+	}
+
+	return common.DecodeJson(resp.Body, target)
+}
+
+func buildAxoneSignature(timestamp string, body []byte, secret string) string {
+	secret = strings.TrimSpace(secret)
+	if secret == "" {
+		return "new-api"
+	}
+	mac := hmac.New(sha512.New, []byte(secret))
+	_, _ = mac.Write([]byte(timestamp))
+	_, _ = mac.Write([]byte("."))
+	_, _ = mac.Write(body)
+	return hex.EncodeToString(mac.Sum(nil))
 }
 
 func md5Hex(value string) string {

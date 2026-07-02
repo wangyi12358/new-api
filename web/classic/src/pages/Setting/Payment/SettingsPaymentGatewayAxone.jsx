@@ -35,6 +35,8 @@ export default function SettingsPaymentGatewayAxone(props) {
     AxoneBaseURL: '',
     AxoneAccount: '',
     AxonePassword: '',
+    AxoneAccessToken: '',
+    AxoneWebhookPublicKey: '',
     AxoneCurrencies: 'USDT,USDC',
     AxoneFeePercent: 0,
   });
@@ -47,6 +49,8 @@ export default function SettingsPaymentGatewayAxone(props) {
         AxoneBaseURL: props.options.AxoneBaseURL || '',
         AxoneAccount: props.options.AxoneAccount || '',
         AxonePassword: props.options.AxonePassword || '',
+        AxoneAccessToken: props.options.AxoneAccessToken || '',
+        AxoneWebhookPublicKey: props.options.AxoneWebhookPublicKey || '',
         AxoneCurrencies: props.options.AxoneCurrencies || 'USDT,USDC',
         AxoneFeePercent: Number(props.options.AxoneFeePercent) || 0,
       };
@@ -78,6 +82,14 @@ export default function SettingsPaymentGatewayAxone(props) {
         {
           key: 'AxonePassword',
           value: inputs.AxonePassword || '',
+        },
+        {
+          key: 'AxoneAccessToken',
+          value: (inputs.AxoneAccessToken || '').trim(),
+        },
+        {
+          key: 'AxoneWebhookPublicKey',
+          value: inputs.AxoneWebhookPublicKey || '',
         },
         {
           key: 'AxoneCurrencies',
@@ -125,7 +137,7 @@ export default function SettingsPaymentGatewayAxone(props) {
           icon={<Coins size={16} />}
           title={t('AXOne 稳定币钱包')}
           description={t(
-            '配置 AXOne 钱包账号后，用户可在 classic 钱包页选择币种与链，并生成支付订单进行稳定币充值。',
+            '配置 AXOne 支付订单 API 后，用户可在 classic 钱包页选择币种、填写付款钱包地址，并生成稳定币支付订单。',
           )}
           closeIcon={null}
           style={{ marginBottom: 16 }}
@@ -152,6 +164,24 @@ export default function SettingsPaymentGatewayAxone(props) {
                 field='AxoneBaseURL'
                 label={t('Base URL')}
                 placeholder='https://test-api.alloyx-payment.net'
+              />
+            </Col>
+
+            <Col xs={24} md={12}>
+              <Form.Input
+                mode='password'
+                field='AxoneAccessToken'
+                label={t('Access Token')}
+                placeholder={t('请输入 AXOne Access Token')}
+              />
+            </Col>
+
+            <Col span={24}>
+              <Form.TextArea
+                field='AxoneWebhookPublicKey'
+                label={t('Webhook 公钥')}
+                placeholder={t('用于校验 AXOne 回调签名的公钥')}
+                autosize={{ minRows: 4, maxRows: 8 }}
               />
             </Col>
 

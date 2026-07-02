@@ -472,7 +472,6 @@ func GetUserTopUps(c *gin.Context) {
 	userId := c.GetInt("id")
 	pageInfo := common.GetPageQuery(c)
 	keyword := c.Query("keyword")
-	_ = model.ExpirePendingAxoneTopUps(common.GetTimestamp())
 
 	var (
 		topups []*model.TopUp
@@ -498,7 +497,6 @@ func GetUserTopUps(c *gin.Context) {
 func GetAllTopUps(c *gin.Context) {
 	pageInfo := common.GetPageQuery(c)
 	keyword := c.Query("keyword")
-	_ = model.ExpirePendingAxoneTopUps(common.GetTimestamp())
 
 	var (
 		topups []*model.TopUp

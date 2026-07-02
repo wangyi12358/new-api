@@ -71,7 +71,7 @@ const PaymentConfirmModal = ({
                 {renderQuotaWithAmount(topUpCount)}
               </Text>
             </div>
-            <div className='flex justify-between items-center'>
+            {/* <div className='flex justify-between items-center'>
               <Text strong className='text-slate-700 dark:text-slate-200'>
                 {t('实付金额')}：
               </Text>
@@ -89,7 +89,7 @@ const PaymentConfirmModal = ({
                   )}
                 </div>
               )}
-            </div>
+            </div> */}
             {hasDiscount && !amountLoading && (
               <>
                 <div className='flex justify-between items-center'>

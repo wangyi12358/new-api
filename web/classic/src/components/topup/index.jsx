@@ -100,8 +100,10 @@ const TopUp = () => {
   const [axoneChains, setAxoneChains] = useState([]);
   const [selectedAxoneCurrency, setSelectedAxoneCurrency] = useState('');
   const [selectedAxoneChain, setSelectedAxoneChain] = useState('');
+  const [axonePaymentWalletAddress, setAxonePaymentWalletAddress] = useState('');
   const [axoneAddress, setAxoneAddress] = useState('');
   const [axoneTradeNo, setAxoneTradeNo] = useState('');
+  const [axoneOrderNo, setAxoneOrderNo] = useState('');
   const [axoneBasePaymentMoney, setAxoneBasePaymentMoney] = useState('');
   const [axoneFee, setAxoneFee] = useState('');
   const [axonePaymentMoney, setAxonePaymentMoney] = useState('');
@@ -843,10 +845,10 @@ const TopUp = () => {
         setAxoneChains(data);
         return data;
       }
-      showError(message || t('获取 AXOne 链列表失败'));
+      showError(message || t('获取稳定币链列表失败'));
       return [];
     } catch (error) {
-      showError(t('获取 AXOne 链列表失败'));
+      showError(t('获取稳定币链列表失败'));
       return [];
     } finally {
       setAxoneChainLoading(false);
@@ -862,17 +864,23 @@ const TopUp = () => {
       showError(t('请选择链'));
       return;
     }
+    if (!axonePaymentWalletAddress.trim()) {
+      showError(t('请输入付款钱包地址'));
+      return;
+    }
     setAxoneAddressLoading(true);
     try {
-      const res = await API.post('/api/user/axone/address', {
+      const res = await API.post('/api/user/axone/order', {
         amount: parseInt(topUpCount, 10),
         currency: selectedAxoneCurrency,
         chain_id: selectedAxoneChain,
+        payment_wallet_address: axonePaymentWalletAddress.trim(),
       });
       const { success, message, data } = res.data;
       if (success && data?.address) {
         setAxoneAddress(data.address);
         setAxoneTradeNo(data.trade_no || '');
+        setAxoneOrderNo(data.axone_order_no || '');
         setAxoneBasePaymentMoney(data.base_payment_money || '');
         setAxoneFee(data.display_fee || data.fee || '');
         setAxonePaymentMoney(data.display_payment_money || data.payment_money || '');
@@ -952,6 +960,7 @@ const TopUp = () => {
 
   useEffect(() => {
     if (enableAxoneTopUp) {
+      setSelectedAxoneCurrency((prev) => prev || axoneCurrencies[0] || '');
       getAxoneChains().then((chains) => {
         if (Array.isArray(chains) && chains.length > 0) {
           setSelectedAxoneChain((prev) => prev || chains[0].chain_id || '');
@@ -962,16 +971,17 @@ const TopUp = () => {
       setSelectedAxoneChain('');
       setAxoneAddress('');
     }
-  }, [enableAxoneTopUp]);
+  }, [enableAxoneTopUp, axoneCurrencies]);
 
   useEffect(() => {
     setAxoneAddress('');
     setAxoneTradeNo('');
+    setAxoneOrderNo('');
     setAxoneBasePaymentMoney('');
     setAxoneFee('');
     setAxonePaymentMoney('');
     setAxoneExpireAt(0);
-  }, [selectedAxoneCurrency, selectedAxoneChain]);
+  }, [selectedAxoneCurrency, selectedAxoneChain, axonePaymentWalletAddress]);
 
   const renderAmount = () => {
     return amount + ' ' + t('元');
@@ -1188,8 +1198,11 @@ const TopUp = () => {
           axoneChains={axoneChains}
           selectedAxoneChain={selectedAxoneChain}
           setSelectedAxoneChain={setSelectedAxoneChain}
+          axonePaymentWalletAddress={axonePaymentWalletAddress}
+          setAxonePaymentWalletAddress={setAxonePaymentWalletAddress}
           axoneAddress={axoneAddress}
           axoneTradeNo={axoneTradeNo}
+          axoneOrderNo={axoneOrderNo}
           axoneBasePaymentMoney={axoneBasePaymentMoney}
           axoneFee={axoneFee}
           axonePaymentMoney={axonePaymentMoney}

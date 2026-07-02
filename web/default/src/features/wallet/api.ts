@@ -206,7 +206,7 @@ export async function getAxoneChains(): Promise<AxoneChainsResponse> {
 export async function requestAxoneAddress(
   request: AxoneAddressRequest
 ): Promise<AxoneAddressResponse> {
-  const res = await api.post('/api/user/axone/address', request, {
+  const res = await api.post('/api/user/axone/order', request, {
     skipBusinessError: true,
   } as Record<string, unknown>)
   return res.data

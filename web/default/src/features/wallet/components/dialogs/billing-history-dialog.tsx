@@ -286,10 +286,10 @@ export function BillingHistoryDialog({
                               </div>
                               <div className='space-y-1'>
                                 <Label className='text-muted-foreground text-xs'>
-                                  {t('Chain')}
+                                  {t('AXOne Order No')}
                                 </Label>
                                 <div className='text-sm font-medium'>
-                                  {record.axone_chain_id || '-'}
+                                  {record.axone_order_no || '-'}
                                 </div>
                               </div>
                               <div className='space-y-1'>
@@ -306,6 +306,14 @@ export function BillingHistoryDialog({
                                 </Label>
                                 <div className='font-mono text-xs break-all'>
                                   {record.axone_address || '-'}
+                                </div>
+                              </div>
+                              <div className='space-y-1 sm:col-span-2'>
+                                <Label className='text-muted-foreground text-xs'>
+                                  {t('Payment Wallet Address')}
+                                </Label>
+                                <div className='font-mono text-xs break-all'>
+                                  {record.axone_payment_wallet_address || '-'}
                                 </div>
                               </div>
                             </>
