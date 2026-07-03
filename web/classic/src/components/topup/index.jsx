@@ -1013,6 +1013,15 @@ const TopUp = () => {
         if (data.status === 'success') {
           showSuccess(t('稳定币支付成功，已到账'));
           await getUserQuota();
+          setAxoneAddress('');
+          setAxoneTradeNo('');
+          setAxoneOrderNo('');
+          setAxoneBasePaymentMoney('');
+          setAxoneFee('');
+          setAxonePaymentMoney('');
+          setAxoneExpireAt(0);
+          setAxoneOrderStatus('');
+          axonePaymentNotifiedRef.current = '';
         } else if (data.status === 'failed') {
           showError(t('支付订单失败'));
         } else if (data.status === 'expired') {

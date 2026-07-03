@@ -141,6 +141,7 @@ export function useAxoneTopup(
         if (nextStatus === 'success') {
           toast.success(i18next.t('Stablecoin payment received'))
           await onPaymentSuccess?.()
+          setAddressData(null)
         } else if (nextStatus === 'failed') {
           toast.error(i18next.t('Payment order failed'))
         } else if (nextStatus === 'expired') {
