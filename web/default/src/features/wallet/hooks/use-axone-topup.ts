@@ -16,10 +16,15 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import i18next from 'i18next'
 import { toast } from 'sonner'
-import { getAxoneChains, isApiSuccess, requestAxoneAddress } from '../api'
+import {
+  getAxoneChains,
+  getTopupStatus,
+  isApiSuccess,
+  requestAxoneAddress,
+} from '../api'
 import type { AxoneAddressData, AxoneChain } from '../types'
 
 function getErrorMessage(message: string | undefined, data: unknown): string {
@@ -29,11 +34,20 @@ function getErrorMessage(message: string | undefined, data: unknown): string {
   return message || i18next.t('Request failed')
 }
 
-export function useAxoneTopup(enabled: boolean) {
+interface UseAxoneTopupOptions {
+  onPaymentSuccess?: () => void | Promise<void>
+}
+
+export function useAxoneTopup(
+  enabled: boolean,
+  options: UseAxoneTopupOptions = {}
+) {
+  const { onPaymentSuccess } = options
   const [chains, setChains] = useState<AxoneChain[]>([])
   const [chainsLoading, setChainsLoading] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [addressData, setAddressData] = useState<AxoneAddressData | null>(null)
+  const notifiedTradeNoRef = useRef('')
 
   const loadChains = useCallback(async () => {
     if (!enabled) return
@@ -69,6 +83,7 @@ export function useAxoneTopup(enabled: boolean) {
         })
         if (isApiSuccess(response) && response.data) {
           setAddressData(response.data)
+          notifiedTradeNoRef.current = ''
           toast.success(i18next.t('Payment order generated'))
           return response.data
         }
@@ -88,10 +103,60 @@ export function useAxoneTopup(enabled: boolean) {
     if (!enabled) {
       setChains([])
       setAddressData(null)
+      notifiedTradeNoRef.current = ''
       return
     }
     void loadChains()
   }, [enabled, loadChains])
+
+  useEffect(() => {
+    const tradeNo = addressData?.trade_no
+    if (!enabled || !tradeNo || addressData.status !== 'pending') {
+      return
+    }
+
+    const checkStatus = async () => {
+      try {
+        const response = await getTopupStatus(tradeNo)
+        if (!isApiSuccess(response) || !response.data) {
+          return
+        }
+
+        const nextStatus = response.data.status
+        if (nextStatus === 'pending') {
+          return
+        }
+
+        setAddressData((previous) =>
+          previous?.trade_no === tradeNo
+            ? { ...previous, status: nextStatus }
+            : previous
+        )
+
+        if (notifiedTradeNoRef.current === tradeNo) {
+          return
+        }
+        notifiedTradeNoRef.current = tradeNo
+
+        if (nextStatus === 'success') {
+          toast.success(i18next.t('Stablecoin payment received'))
+          await onPaymentSuccess?.()
+        } else if (nextStatus === 'failed') {
+          toast.error(i18next.t('Payment order failed'))
+        } else if (nextStatus === 'expired') {
+          toast.error(i18next.t('Payment order expired'))
+        }
+      } catch {
+        // Keep polling; transient network errors should not interrupt the user.
+      }
+    }
+
+    void checkStatus()
+    const timer = window.setInterval(() => {
+      void checkStatus()
+    }, 5000)
+    return () => window.clearInterval(timer)
+  }, [addressData?.status, addressData?.trade_no, enabled, onPaymentSuccess])
 
   return {
     chains,

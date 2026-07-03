@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -491,6 +492,29 @@ func GetUserTopUps(c *gin.Context) {
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(topups)
 	common.ApiSuccess(c, pageInfo)
+}
+
+func GetTopUpStatus(c *gin.Context) {
+	userId := c.GetInt("id")
+	tradeNo := strings.TrimSpace(c.Query("trade_no"))
+	if tradeNo == "" {
+		common.ApiErrorMsg(c, "trade_no is required")
+		return
+	}
+
+	topUp := model.GetTopUpByTradeNo(tradeNo)
+	if topUp == nil || topUp.UserId != userId {
+		common.ApiErrorMsg(c, "topup order not found")
+		return
+	}
+
+	common.ApiSuccess(c, gin.H{
+		"trade_no":      topUp.TradeNo,
+		"status":        topUp.Status,
+		"complete_time": topUp.CompleteTime,
+		"amount":        topUp.Amount,
+		"money":         topUp.Money,
+	})
 }
 
 // GetAllTopUps 管理员获取全平台充值记录

@@ -93,6 +93,7 @@ interface RechargeFormCardProps {
   waffoMinTopup?: number
   onWaffoMethodSelect?: (method: WaffoPayMethod, index: number) => void
   enableWaffoPancakeTopup?: boolean
+  onAxonePaymentSuccess?: () => void | Promise<void>
 }
 
 export function RechargeFormCard({
@@ -123,6 +124,7 @@ export function RechargeFormCard({
   waffoMinTopup,
   onWaffoMethodSelect,
   enableWaffoPancakeTopup,
+  onAxonePaymentSuccess,
 }: RechargeFormCardProps) {
   const { t } = useTranslation()
   const [localAmount, setLocalAmount] = useState(topupAmount.toString())
@@ -507,6 +509,7 @@ export function RechargeFormCard({
             enabled={topupInfo?.enable_axone_topup === true}
             amount={topupAmount}
             currencies={topupInfo?.axone_currencies}
+            onPaymentSuccess={onAxonePaymentSuccess}
           />
         </DialogContent>
       </Dialog>

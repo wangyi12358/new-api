@@ -42,6 +42,7 @@ import type {
   AxoneChainsResponse,
   AxoneAddressRequest,
   AxoneAddressResponse,
+  TopupStatusData,
 } from './types'
 
 // ============================================================================
@@ -207,6 +208,16 @@ export async function requestAxoneAddress(
   request: AxoneAddressRequest
 ): Promise<AxoneAddressResponse> {
   const res = await api.post('/api/user/axone/order', request, {
+    skipBusinessError: true,
+  } as Record<string, unknown>)
+  return res.data
+}
+
+export async function getTopupStatus(
+  tradeNo: string
+): Promise<ApiResponse<TopupStatusData>> {
+  const params = new URLSearchParams({ trade_no: tradeNo })
+  const res = await api.get(`/api/user/topup/status?${params.toString()}`, {
     skipBusinessError: true,
   } as Record<string, unknown>)
   return res.data

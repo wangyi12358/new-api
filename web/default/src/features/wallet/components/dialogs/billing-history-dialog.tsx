@@ -117,7 +117,7 @@ export function BillingHistoryDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col max-sm:h-dvh max-sm:w-screen max-sm:max-w-none max-sm:rounded-none max-sm:p-4 sm:max-w-4xl'>
+        <DialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col max-sm:h-dvh max-sm:w-screen max-sm:max-w-none max-sm:rounded-none max-sm:p-4 sm:max-w-6xl'>
           <DialogHeader>
             <DialogTitle>{t('Billing History')}</DialogTitle>
             <DialogDescription>
@@ -272,6 +272,16 @@ export function BillingHistoryDialog({
                             </Label>
                             <div className='text-sm font-semibold text-red-600'>
                               {formatPaymentMoney(record)}
+                            </div>
+                          </div>
+                          <div className='space-y-1'>
+                            <Label className='text-muted-foreground text-xs'>
+                              {t('Finish Time')}
+                            </Label>
+                            <div className='text-sm font-medium'>
+                              {record.complete_time
+                                ? formatTimestamp(record.complete_time)
+                                : '-'}
                             </div>
                           </div>
                           {record.payment_provider === 'axone' && (

@@ -37,12 +37,14 @@ interface AxoneTopupSectionProps {
   enabled: boolean
   amount: number
   currencies?: string[]
+  onPaymentSuccess?: () => void | Promise<void>
 }
 
 export function AxoneTopupSection({
   enabled,
   amount,
   currencies = [],
+  onPaymentSuccess,
 }: AxoneTopupSectionProps) {
   const { t } = useTranslation()
   const [selectedCurrency, setSelectedCurrency] = useState('')
@@ -57,7 +59,7 @@ export function AxoneTopupSection({
     setAddressData,
     loadChains,
     generateAddress,
-  } = useAxoneTopup(enabled)
+  } = useAxoneTopup(enabled, { onPaymentSuccess })
 
   const normalizedCurrencies = useMemo(
     () =>
@@ -171,7 +173,7 @@ export function AxoneTopupSection({
         </div>
       </div>
 
-      <div className='grid gap-3 sm:grid-cols-3'>
+      <div className='grid gap-3 sm:grid-cols-2'>
         <div className='space-y-2'>
           <Label>{t('Currency')}</Label>
           <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
@@ -237,7 +239,7 @@ export function AxoneTopupSection({
           )}
         </div>
 
-        <div className='space-y-2'>
+        <div className='space-y-2 sm:col-span-2'>
           <Label>{t('Payment Wallet Address')}</Label>
           <Input
             value={paymentWalletAddress}

@@ -268,6 +268,12 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
       key: 'create_time',
       render: (time) => timestamp2string(time),
     });
+    baseColumns.push({
+      title: t('完成时间'),
+      dataIndex: 'complete_time',
+      key: 'complete_time',
+      render: (time) => (time ? timestamp2string(time) : '-'),
+    });
 
     return baseColumns;
   }, [t, userIsAdmin]);
@@ -279,6 +285,7 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
       onCancel={onCancel}
       footer={null}
       size={isMobile ? 'full-width' : 'large'}
+      style={isMobile ? undefined : { width: 'min(1200px, calc(100vw - 48px))' }}
     >
       <div className='mb-3'>
         <Input

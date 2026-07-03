@@ -778,7 +778,7 @@ const RechargeCard = ({
             </div>
           </Card>
 
-          <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
             <div className='space-y-1.5'>
               <Text strong>{t('选择币种')}</Text>
               <Select
@@ -830,7 +830,7 @@ const RechargeCard = ({
                   </Text>
                 )}
             </div>
-            <div className='space-y-1.5'>
+            <div className='space-y-1.5 sm:col-span-2'>
               <Text strong>{t('付款钱包地址')}</Text>
               <Input
                 placeholder={t('请输入实际转出的付款钱包地址')}

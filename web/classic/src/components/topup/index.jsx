@@ -108,8 +108,10 @@ const TopUp = () => {
   const [axoneFee, setAxoneFee] = useState('');
   const [axonePaymentMoney, setAxonePaymentMoney] = useState('');
   const [axoneExpireAt, setAxoneExpireAt] = useState(0);
+  const [axoneOrderStatus, setAxoneOrderStatus] = useState('');
   const [axoneChainLoading, setAxoneChainLoading] = useState(false);
   const [axoneAddressLoading, setAxoneAddressLoading] = useState(false);
+  const axonePaymentNotifiedRef = useRef('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [open, setOpen] = useState(false);
@@ -885,6 +887,8 @@ const TopUp = () => {
         setAxoneFee(data.display_fee || data.fee || '');
         setAxonePaymentMoney(data.display_payment_money || data.payment_money || '');
         setAxoneExpireAt(Number(data.expires_at) || 0);
+        setAxoneOrderStatus(data.status || 'pending');
+        axonePaymentNotifiedRef.current = '';
         showSuccess(t('支付订单已生成'));
         return;
       }
@@ -981,7 +985,48 @@ const TopUp = () => {
     setAxoneFee('');
     setAxonePaymentMoney('');
     setAxoneExpireAt(0);
+    setAxoneOrderStatus('');
+    axonePaymentNotifiedRef.current = '';
   }, [selectedAxoneCurrency, selectedAxoneChain, axonePaymentWalletAddress]);
+
+  useEffect(() => {
+    if (!axoneTradeNo || axoneOrderStatus !== 'pending') {
+      return;
+    }
+
+    const checkAxoneOrderStatus = async () => {
+      try {
+        const res = await API.get('/api/user/topup/status', {
+          params: { trade_no: axoneTradeNo },
+        });
+        const { success, data } = res.data || {};
+        if (!success || !data?.status || data.status === 'pending') {
+          return;
+        }
+
+        setAxoneOrderStatus(data.status);
+        if (axonePaymentNotifiedRef.current === axoneTradeNo) {
+          return;
+        }
+        axonePaymentNotifiedRef.current = axoneTradeNo;
+
+        if (data.status === 'success') {
+          showSuccess(t('稳定币支付成功，已到账'));
+          await getUserQuota();
+        } else if (data.status === 'failed') {
+          showError(t('支付订单失败'));
+        } else if (data.status === 'expired') {
+          showError(t('支付订单已过期'));
+        }
+      } catch (error) {
+        // 网络抖动时继续轮询，不打扰用户。
+      }
+    };
+
+    checkAxoneOrderStatus();
+    const timer = window.setInterval(checkAxoneOrderStatus, 5000);
+    return () => window.clearInterval(timer);
+  }, [axoneTradeNo, axoneOrderStatus, t]);
 
   const renderAmount = () => {
     return amount + ' ' + t('元');

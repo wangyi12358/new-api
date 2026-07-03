@@ -150,6 +150,14 @@ export interface AxoneAddressData {
   status: TopupStatus
 }
 
+export interface TopupStatusData {
+  trade_no: string
+  status: TopupStatus
+  complete_time?: number
+  amount?: number
+  money?: number
+}
+
 /**
  * Topup configuration information
  */
