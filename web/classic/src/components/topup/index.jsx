@@ -838,18 +838,10 @@ const TopUp = () => {
     showSuccess(t('邀请链接已复制到剪切板'));
   };
 
-  const getAxoneChains = async (currency = selectedAxoneCurrency) => {
-    const normalizedCurrency = (currency || '').trim().toUpperCase();
-    if (!normalizedCurrency) {
-      setAxoneChains([]);
-      setSelectedAxoneChain('');
-      return [];
-    }
+  const getAxoneChains = async () => {
     setAxoneChainLoading(true);
     try {
-      const res = await API.get('/api/user/axone/chains', {
-        params: { currency: normalizedCurrency },
-      });
+      const res = await API.get('/api/user/axone/chains');
       const { success, message, data } = res.data;
       if (success && Array.isArray(data)) {
         setAxoneChains(data);
@@ -972,11 +964,11 @@ const TopUp = () => {
 
   useEffect(() => {
     if (enableAxoneTopUp) {
-      setSelectedAxoneCurrency((prev) => {
-        if (prev && axoneCurrencies.includes(prev)) {
-          return prev;
+      setSelectedAxoneCurrency((prev) => prev || axoneCurrencies[0] || '');
+      getAxoneChains().then((chains) => {
+        if (Array.isArray(chains) && chains.length > 0) {
+          setSelectedAxoneChain((prev) => prev || chains[0].chain_id || '');
         }
-        return axoneCurrencies[0] || '';
       });
     } else {
       setAxoneChains([]);
@@ -984,25 +976,6 @@ const TopUp = () => {
       setAxoneAddress('');
     }
   }, [enableAxoneTopUp, axoneCurrencies]);
-
-  useEffect(() => {
-    if (!enableAxoneTopUp || !selectedAxoneCurrency) {
-      setAxoneChains([]);
-      setSelectedAxoneChain('');
-      return;
-    }
-    getAxoneChains(selectedAxoneCurrency).then((chains) => {
-      if (Array.isArray(chains) && chains.length > 0) {
-        setSelectedAxoneChain((prev) =>
-          prev && chains.some((chain) => chain.chain_id === prev)
-            ? prev
-            : chains[0].chain_id || '',
-        );
-      } else {
-        setSelectedAxoneChain('');
-      }
-    });
-  }, [enableAxoneTopUp, selectedAxoneCurrency]);
 
   useEffect(() => {
     setAxoneAddress('');

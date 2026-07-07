@@ -59,22 +59,10 @@ func ListAxoneChains(c *gin.Context) {
 	}
 
 	client := service.GetAxoneClient()
-	currency := strings.ToUpper(strings.TrimSpace(c.Query("currency")))
-	var (
-		chains []service.AxoneChain
-		err    error
-	)
-	if currency != "" {
-		if !containsAxoneCurrency(currency) {
-			common.ApiErrorMsg(c, "Unsupported AXOne currency")
-			return
-		}
-		chains, err = client.ListChainsByCurrency(c.Request.Context(), currency)
-	} else {
-		chains, err = client.ListChains(c.Request.Context())
-	}
+	chains, err := client.ListChains(c.Request.Context())
 	if err != nil {
-		common.ApiErrorMsg(c, "Failed to fetch AXOne chains")
+		logger.LogError(c.Request.Context(), fmt.Sprintf("AXOne list chains failed error=%q", err.Error()))
+		common.ApiErrorMsg(c, err.Error())
 		return
 	}
 
@@ -115,9 +103,10 @@ func RequestAxoneAddress(c *gin.Context) {
 	}
 
 	client := service.GetAxoneClient()
-	axoneChain, err := resolveAxonePaymentChain(c.Request.Context(), client, currency, chainID)
+	axoneChain, err := resolveAxonePaymentChain(c.Request.Context(), client, chainID)
 	if err != nil {
-		common.ApiErrorMsg(c, "Failed to resolve AXOne chain")
+		logger.LogError(c.Request.Context(), fmt.Sprintf("AXOne resolve chain failed chain_id=%s error=%q", chainID, err.Error()))
+		common.ApiErrorMsg(c, err.Error())
 		return
 	}
 
@@ -167,7 +156,7 @@ func RequestAxoneAddress(c *gin.Context) {
 		topUp.Status = common.TopUpStatusFailed
 		_ = topUp.Update()
 		logger.LogError(c.Request.Context(), fmt.Sprintf("AXOne create provider order failed user_id=%d trade_no=%s error=%q", id, tradeNo, err.Error()))
-		common.ApiErrorMsg(c, "Failed to create AXOne payment order")
+		common.ApiErrorMsg(c, err.Error())
 		return
 	}
 
@@ -206,13 +195,13 @@ func containsAxoneCurrency(currency string) bool {
 	return false
 }
 
-func resolveAxonePaymentChain(ctx context.Context, client *service.AxoneClient, currency string, selectedChain string) (string, error) {
+func resolveAxonePaymentChain(ctx context.Context, client *service.AxoneClient, selectedChain string) (string, error) {
 	selectedChain = strings.TrimSpace(selectedChain)
 	if selectedChain == "" {
 		return "", fmt.Errorf("empty chain")
 	}
 
-	chains, err := client.ListChainsByCurrency(ctx, currency)
+	chains, err := client.ListChains(ctx)
 	if err != nil {
 		return "", err
 	}

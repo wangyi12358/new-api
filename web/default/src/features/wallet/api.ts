@@ -197,15 +197,8 @@ export async function requestWaffoPancakePayment(
   return res.data
 }
 
-export async function getAxoneChains(
-  currency?: string
-): Promise<AxoneChainsResponse> {
-  const params = new URLSearchParams()
-  if (currency) {
-    params.set('currency', currency)
-  }
-  const query = params.toString()
-  const res = await api.get(`/api/user/axone/chains${query ? `?${query}` : ''}`, {
+export async function getAxoneChains(): Promise<AxoneChainsResponse> {
+  const res = await api.get('/api/user/axone/chains', {
     skipBusinessError: true,
   } as Record<string, unknown>)
   return res.data

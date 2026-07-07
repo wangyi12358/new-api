@@ -7,7 +7,6 @@ import (
 	"crypto/md5"
 	"crypto/sha512"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -24,11 +23,6 @@ type AxoneChain struct {
 	ChainID   string `json:"chain_id"`
 	ChainName string `json:"chain_name"`
 	Symbol    string `json:"symbol"`
-}
-
-type axoneCurrency struct {
-	Currency string          `json:"currency"`
-	Chain    json.RawMessage `json:"chain"`
 }
 
 type axoneLoginData struct {
@@ -53,10 +47,6 @@ type axoneResponse[T any] struct {
 
 type axoneChainListData struct {
 	Data []AxoneChain `json:"data"`
-}
-
-type axoneCurrencyListData struct {
-	Data []axoneCurrency `json:"data"`
 }
 
 type AxonePaymentOrderRequest struct {
@@ -130,111 +120,9 @@ func (c *AxoneClient) ListChains(ctx context.Context) ([]AxoneChain, error) {
 		return nil, err
 	}
 	if resp.Code != 0 {
-		return nil, fmt.Errorf("axone list chains failed: %s", resp.Message)
+		return nil, axoneResponseError(resp.Message)
 	}
 	return resp.Data.Data, nil
-}
-
-func (c *AxoneClient) ListChainsByCurrency(ctx context.Context, currency string) ([]AxoneChain, error) {
-	currency = strings.ToUpper(strings.TrimSpace(currency))
-	if currency == "" {
-		return nil, fmt.Errorf("axone currency is empty")
-	}
-	if err := c.ensureReady(); err != nil {
-		return nil, err
-	}
-
-	query := url.Values{}
-	query.Set("currency_type", "crypto")
-	query.Set("currency", currency)
-
-	var resp axoneResponse[json.RawMessage]
-	if err := c.doJSONRequest(ctx, http.MethodGet, "/web/crypto/currency/dropdown?"+query.Encode(), nil, "", &resp); err != nil {
-		return nil, err
-	}
-	if resp.Code != 0 {
-		return nil, fmt.Errorf("axone list currencies failed: %s", resp.Message)
-	}
-
-	currencies, err := parseAxoneCurrencyList(resp.Data)
-	if err != nil {
-		return nil, err
-	}
-
-	supportedChainIDs := map[string]bool{}
-	for _, item := range currencies {
-		if !strings.EqualFold(strings.TrimSpace(item.Currency), currency) {
-			continue
-		}
-		for _, chainID := range parseAxoneCurrencyChains(item.Chain) {
-			chainID = strings.TrimSpace(chainID)
-			if chainID != "" {
-				supportedChainIDs[chainID] = true
-			}
-		}
-	}
-	if len(supportedChainIDs) == 0 {
-		return []AxoneChain{}, nil
-	}
-
-	chains, err := c.ListChains(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	filtered := make([]AxoneChain, 0, len(chains))
-	for _, chain := range chains {
-		if supportedChainIDs[strings.TrimSpace(chain.ChainID)] {
-			filtered = append(filtered, chain)
-		}
-	}
-	return filtered, nil
-}
-
-func parseAxoneCurrencyList(data json.RawMessage) ([]axoneCurrency, error) {
-	switch common.GetJsonType(data) {
-	case "array":
-		var currencies []axoneCurrency
-		if err := common.Unmarshal(data, &currencies); err != nil {
-			return nil, err
-		}
-		return currencies, nil
-	case "object":
-		var listData axoneCurrencyListData
-		if err := common.Unmarshal(data, &listData); err != nil {
-			return nil, err
-		}
-		return listData.Data, nil
-	default:
-		return []axoneCurrency{}, nil
-	}
-}
-
-func parseAxoneCurrencyChains(data json.RawMessage) []string {
-	if len(data) == 0 {
-		return nil
-	}
-
-	var stringItems []string
-	if err := common.Unmarshal(data, &stringItems); err == nil {
-		return stringItems
-	}
-
-	var rawItems []interface{}
-	if err := common.Unmarshal(data, &rawItems); err != nil {
-		return nil
-	}
-
-	chains := make([]string, 0, len(rawItems))
-	for _, item := range rawItems {
-		switch value := item.(type) {
-		case string:
-			chains = append(chains, value)
-		case float64:
-			chains = append(chains, fmt.Sprintf("%.0f", value))
-		}
-	}
-	return chains
 }
 
 func (c *AxoneClient) GetWalletAddress(ctx context.Context, currency string, chainID string) (string, error) {
@@ -258,7 +146,7 @@ func (c *AxoneClient) GetWalletAddress(ctx context.Context, currency string, cha
 		return "", err
 	}
 	if resp.Code != 0 {
-		return "", fmt.Errorf("axone get address failed: %s", resp.Message)
+		return "", axoneResponseError(resp.Message)
 	}
 
 	address := strings.TrimSpace(resp.Data.Adress)
@@ -288,7 +176,7 @@ func (c *AxoneClient) CreatePaymentOrder(ctx context.Context, request AxonePayme
 		return nil, err
 	}
 	if resp.Code != 0 {
-		return nil, fmt.Errorf("axone create payment order failed: %s", resp.Message)
+		return nil, axoneResponseError(resp.Message)
 	}
 	if strings.TrimSpace(resp.Data.PayAddress) == "" {
 		return nil, fmt.Errorf("axone returned empty pay address")
@@ -350,7 +238,7 @@ func (c *AxoneClient) loginLocked(ctx context.Context) error {
 		return err
 	}
 	if resp.Code != 0 {
-		return fmt.Errorf("axone login failed: %s", resp.Message)
+		return axoneResponseError(resp.Message)
 	}
 	if strings.TrimSpace(resp.Data.AccessToken) == "" {
 		return fmt.Errorf("axone login returned empty access token")
@@ -374,7 +262,7 @@ func (c *AxoneClient) refreshLocked(ctx context.Context) error {
 		return err
 	}
 	if resp.Code != 0 {
-		return fmt.Errorf("axone refresh failed: %s", resp.Message)
+		return axoneResponseError(resp.Message)
 	}
 	if strings.TrimSpace(resp.Data.AccessToken) == "" || strings.TrimSpace(resp.Data.RefreshToken) == "" {
 		return fmt.Errorf("axone refresh returned empty token")
@@ -470,6 +358,14 @@ func buildAxoneSignature(timestamp string, body []byte, secret string) string {
 	_, _ = mac.Write([]byte("."))
 	_, _ = mac.Write(body)
 	return hex.EncodeToString(mac.Sum(nil))
+}
+
+func axoneResponseError(message string) error {
+	message = strings.TrimSpace(message)
+	if message == "" {
+		message = "AXOne request failed"
+	}
+	return fmt.Errorf("%s", message)
 }
 
 func md5Hex(value string) string {

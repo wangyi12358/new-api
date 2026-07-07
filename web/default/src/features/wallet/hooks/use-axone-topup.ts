@@ -49,28 +49,21 @@ export function useAxoneTopup(
   const [addressData, setAddressData] = useState<AxoneAddressData | null>(null)
   const notifiedTradeNoRef = useRef('')
 
-  const loadChains = useCallback(async (currency?: string) => {
-    const normalizedCurrency = currency?.trim().toUpperCase()
-    if (!enabled || !normalizedCurrency) {
-      setChains([])
-      return []
-    }
+  const loadChains = useCallback(async () => {
+    if (!enabled) return
     setChainsLoading(true)
     try {
-      const response = await getAxoneChains(normalizedCurrency)
+      const response = await getAxoneChains()
       if (isApiSuccess(response) && Array.isArray(response.data)) {
         setChains(response.data)
-        return response.data
+        return
       }
       toast.error(getErrorMessage(response.message, response.data))
-      setChains([])
     } catch {
       toast.error(i18next.t('Failed to load supported chains'))
-      setChains([])
     } finally {
       setChainsLoading(false)
     }
-    return []
   }, [enabled])
 
   const generateAddress = useCallback(
@@ -111,8 +104,10 @@ export function useAxoneTopup(
       setChains([])
       setAddressData(null)
       notifiedTradeNoRef.current = ''
+      return
     }
-  }, [enabled])
+    void loadChains()
+  }, [enabled, loadChains])
 
   useEffect(() => {
     const tradeNo = addressData?.trade_no
