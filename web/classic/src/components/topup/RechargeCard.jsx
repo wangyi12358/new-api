@@ -806,14 +806,19 @@ const RechargeCard = ({
                   size='small'
                   icon={<Receipt size={14} />}
                   loading={axoneChainLoading}
-                  onClick={getAxoneChains}
+                  disabled={!selectedAxoneCurrency}
+                  onClick={() => getAxoneChains(selectedAxoneCurrency)}
                 >
                   {t('刷新')}
                 </Button>
               </div>
               <Select
                 placeholder={
-                  axoneChainLoading ? t('加载链列表中...') : t('请选择链')
+                  !selectedAxoneCurrency
+                    ? t('请选择币种')
+                    : axoneChainLoading
+                      ? t('加载链列表中...')
+                      : t('请选择链')
                 }
                 value={selectedAxoneChain}
                 onChange={(value) => setSelectedAxoneChain(value)}
@@ -821,9 +826,11 @@ const RechargeCard = ({
                   label: `${chain.chain_name} (${chain.symbol})`,
                   value: chain.chain_id,
                 }))}
+                disabled={!selectedAxoneCurrency || axoneChainLoading}
                 style={{ width: '100%' }}
               />
               {!axoneChainLoading &&
+                selectedAxoneCurrency &&
                 (!axoneChains || axoneChains.length === 0) && (
                   <Text type='tertiary' size='small'>
                     {t('未加载到可用链，请刷新链列表或检查稳定币配置')}

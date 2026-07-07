@@ -70,11 +70,29 @@ export function AxoneTopupSection({
   )
 
   useEffect(() => {
-    setSelectedCurrency((previous) => previous || normalizedCurrencies[0] || '')
+    setSelectedCurrency((previous) => {
+      if (previous && normalizedCurrencies.includes(previous)) {
+        return previous
+      }
+      return normalizedCurrencies[0] || ''
+    })
   }, [normalizedCurrencies])
 
   useEffect(() => {
-    setSelectedChainID((previous) => previous || chains[0]?.chain_id || '')
+    if (!selectedCurrency) {
+      setSelectedChainID('')
+      return
+    }
+    void loadChains(selectedCurrency)
+  }, [selectedCurrency, loadChains])
+
+  useEffect(() => {
+    setSelectedChainID((previous) => {
+      if (previous && chains.some((chain) => chain.chain_id === previous)) {
+        return previous
+      }
+      return chains[0]?.chain_id || ''
+    })
   }, [chains])
 
   useEffect(() => {
@@ -203,8 +221,8 @@ export function AxoneTopupSection({
               variant='ghost'
               size='sm'
               className='h-7 px-2'
-              onClick={() => void loadChains()}
-              disabled={chainsLoading}
+              onClick={() => void loadChains(selectedCurrency)}
+              disabled={chainsLoading || !selectedCurrency}
             >
               {chainsLoading ? (
                 <Loader2 className='h-3.5 w-3.5 animate-spin' />
@@ -215,10 +233,14 @@ export function AxoneTopupSection({
             </Button>
           </div>
           <Select value={selectedChainID} onValueChange={setSelectedChainID}>
-            <SelectTrigger className='h-9'>
+            <SelectTrigger className='h-9' disabled={!selectedCurrency || chainsLoading}>
               <SelectValue
                 placeholder={
-                  chainsLoading ? t('Loading chains...') : t('Select chain')
+                  !selectedCurrency
+                    ? t('Select currency')
+                    : chainsLoading
+                      ? t('Loading chains...')
+                      : t('Select chain')
                 }
               />
             </SelectTrigger>
@@ -230,7 +252,7 @@ export function AxoneTopupSection({
               ))}
             </SelectContent>
           </Select>
-          {!chainsLoading && chains.length === 0 && (
+          {selectedCurrency && !chainsLoading && chains.length === 0 && (
             <p className='text-muted-foreground text-xs'>
               {t(
                 'No supported chains were loaded. Please refresh or check the AXOne configuration.'

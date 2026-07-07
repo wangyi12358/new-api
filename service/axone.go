@@ -25,6 +25,11 @@ type AxoneChain struct {
 	Symbol    string `json:"symbol"`
 }
 
+type axoneCurrency struct {
+	Currency string   `json:"currency"`
+	Chain    []string `json:"chain"`
+}
+
 type axoneLoginData struct {
 	AccessToken           string `json:"accessToken"`
 	RefreshToken          string `json:"refreshToken"`
@@ -123,6 +128,57 @@ func (c *AxoneClient) ListChains(ctx context.Context) ([]AxoneChain, error) {
 		return nil, fmt.Errorf("axone list chains failed: %s", resp.Message)
 	}
 	return resp.Data.Data, nil
+}
+
+func (c *AxoneClient) ListChainsByCurrency(ctx context.Context, currency string) ([]AxoneChain, error) {
+	currency = strings.ToUpper(strings.TrimSpace(currency))
+	if currency == "" {
+		return nil, fmt.Errorf("axone currency is empty")
+	}
+	if err := c.ensureReady(); err != nil {
+		return nil, err
+	}
+
+	query := url.Values{}
+	query.Set("currency_type", "crypto")
+	query.Set("currency", currency)
+
+	var resp axoneResponse[[]axoneCurrency]
+	if err := c.doJSONRequest(ctx, http.MethodGet, "/web/crypto/currency/dropdown?"+query.Encode(), nil, "", &resp); err != nil {
+		return nil, err
+	}
+	if resp.Code != 0 {
+		return nil, fmt.Errorf("axone list currencies failed: %s", resp.Message)
+	}
+
+	supportedChainIDs := map[string]bool{}
+	for _, item := range resp.Data {
+		if !strings.EqualFold(strings.TrimSpace(item.Currency), currency) {
+			continue
+		}
+		for _, chainID := range item.Chain {
+			chainID = strings.TrimSpace(chainID)
+			if chainID != "" {
+				supportedChainIDs[chainID] = true
+			}
+		}
+	}
+	if len(supportedChainIDs) == 0 {
+		return []AxoneChain{}, nil
+	}
+
+	chains, err := c.ListChains(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	filtered := make([]AxoneChain, 0, len(chains))
+	for _, chain := range chains {
+		if supportedChainIDs[strings.TrimSpace(chain.ChainID)] {
+			filtered = append(filtered, chain)
+		}
+	}
+	return filtered, nil
 }
 
 func (c *AxoneClient) GetWalletAddress(ctx context.Context, currency string, chainID string) (string, error) {

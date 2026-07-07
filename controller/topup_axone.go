@@ -59,7 +59,20 @@ func ListAxoneChains(c *gin.Context) {
 	}
 
 	client := service.GetAxoneClient()
-	chains, err := client.ListChains(c.Request.Context())
+	currency := strings.ToUpper(strings.TrimSpace(c.Query("currency")))
+	var (
+		chains []service.AxoneChain
+		err    error
+	)
+	if currency != "" {
+		if !containsAxoneCurrency(currency) {
+			common.ApiErrorMsg(c, "Unsupported AXOne currency")
+			return
+		}
+		chains, err = client.ListChainsByCurrency(c.Request.Context(), currency)
+	} else {
+		chains, err = client.ListChains(c.Request.Context())
+	}
 	if err != nil {
 		common.ApiErrorMsg(c, "Failed to fetch AXOne chains")
 		return
@@ -102,7 +115,7 @@ func RequestAxoneAddress(c *gin.Context) {
 	}
 
 	client := service.GetAxoneClient()
-	axoneChain, err := resolveAxonePaymentChain(c.Request.Context(), client, chainID)
+	axoneChain, err := resolveAxonePaymentChain(c.Request.Context(), client, currency, chainID)
 	if err != nil {
 		common.ApiErrorMsg(c, "Failed to resolve AXOne chain")
 		return
@@ -193,13 +206,13 @@ func containsAxoneCurrency(currency string) bool {
 	return false
 }
 
-func resolveAxonePaymentChain(ctx context.Context, client *service.AxoneClient, selectedChain string) (string, error) {
+func resolveAxonePaymentChain(ctx context.Context, client *service.AxoneClient, currency string, selectedChain string) (string, error) {
 	selectedChain = strings.TrimSpace(selectedChain)
 	if selectedChain == "" {
 		return "", fmt.Errorf("empty chain")
 	}
 
-	chains, err := client.ListChains(ctx)
+	chains, err := client.ListChainsByCurrency(ctx, currency)
 	if err != nil {
 		return "", err
 	}
