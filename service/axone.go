@@ -7,6 +7,7 @@ import (
 	"crypto/md5"
 	"crypto/sha512"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -26,8 +27,8 @@ type AxoneChain struct {
 }
 
 type axoneCurrency struct {
-	Currency string   `json:"currency"`
-	Chain    []string `json:"chain"`
+	Currency string          `json:"currency"`
+	Chain    json.RawMessage `json:"chain"`
 }
 
 type axoneLoginData struct {
@@ -52,6 +53,10 @@ type axoneResponse[T any] struct {
 
 type axoneChainListData struct {
 	Data []AxoneChain `json:"data"`
+}
+
+type axoneCurrencyListData struct {
+	Data []axoneCurrency `json:"data"`
 }
 
 type AxonePaymentOrderRequest struct {
@@ -143,7 +148,7 @@ func (c *AxoneClient) ListChainsByCurrency(ctx context.Context, currency string)
 	query.Set("currency_type", "crypto")
 	query.Set("currency", currency)
 
-	var resp axoneResponse[[]axoneCurrency]
+	var resp axoneResponse[json.RawMessage]
 	if err := c.doJSONRequest(ctx, http.MethodGet, "/web/crypto/currency/dropdown?"+query.Encode(), nil, "", &resp); err != nil {
 		return nil, err
 	}
@@ -151,12 +156,17 @@ func (c *AxoneClient) ListChainsByCurrency(ctx context.Context, currency string)
 		return nil, fmt.Errorf("axone list currencies failed: %s", resp.Message)
 	}
 
+	currencies, err := parseAxoneCurrencyList(resp.Data)
+	if err != nil {
+		return nil, err
+	}
+
 	supportedChainIDs := map[string]bool{}
-	for _, item := range resp.Data {
+	for _, item := range currencies {
 		if !strings.EqualFold(strings.TrimSpace(item.Currency), currency) {
 			continue
 		}
-		for _, chainID := range item.Chain {
+		for _, chainID := range parseAxoneCurrencyChains(item.Chain) {
 			chainID = strings.TrimSpace(chainID)
 			if chainID != "" {
 				supportedChainIDs[chainID] = true
@@ -179,6 +189,52 @@ func (c *AxoneClient) ListChainsByCurrency(ctx context.Context, currency string)
 		}
 	}
 	return filtered, nil
+}
+
+func parseAxoneCurrencyList(data json.RawMessage) ([]axoneCurrency, error) {
+	switch common.GetJsonType(data) {
+	case "array":
+		var currencies []axoneCurrency
+		if err := common.Unmarshal(data, &currencies); err != nil {
+			return nil, err
+		}
+		return currencies, nil
+	case "object":
+		var listData axoneCurrencyListData
+		if err := common.Unmarshal(data, &listData); err != nil {
+			return nil, err
+		}
+		return listData.Data, nil
+	default:
+		return []axoneCurrency{}, nil
+	}
+}
+
+func parseAxoneCurrencyChains(data json.RawMessage) []string {
+	if len(data) == 0 {
+		return nil
+	}
+
+	var stringItems []string
+	if err := common.Unmarshal(data, &stringItems); err == nil {
+		return stringItems
+	}
+
+	var rawItems []interface{}
+	if err := common.Unmarshal(data, &rawItems); err != nil {
+		return nil
+	}
+
+	chains := make([]string, 0, len(rawItems))
+	for _, item := range rawItems {
+		switch value := item.(type) {
+		case string:
+			chains = append(chains, value)
+		case float64:
+			chains = append(chains, fmt.Sprintf("%.0f", value))
+		}
+	}
+	return chains
 }
 
 func (c *AxoneClient) GetWalletAddress(ctx context.Context, currency string, chainID string) (string, error) {
