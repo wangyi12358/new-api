@@ -308,7 +308,7 @@ func (c *AxoneClient) doJSONRequest(ctx context.Context, method string, path str
 
 	if resp.StatusCode >= http.StatusBadRequest {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("axone request failed: status=%d body=%s", resp.StatusCode, strings.TrimSpace(string(bodyBytes)))
+		return axoneHTTPError(resp.StatusCode, bodyBytes)
 	}
 
 	return common.DecodeJson(resp.Body, target)
@@ -342,7 +342,7 @@ func (c *AxoneClient) doSignedJSONRequest(ctx context.Context, method string, pa
 
 	if resp.StatusCode >= http.StatusBadRequest {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("axone request failed: status=%d body=%s", resp.StatusCode, strings.TrimSpace(string(bodyBytes)))
+		return axoneHTTPError(resp.StatusCode, bodyBytes)
 	}
 
 	return common.DecodeJson(resp.Body, target)
@@ -366,6 +366,23 @@ func axoneResponseError(message string) error {
 		message = "AXOne request failed"
 	}
 	return fmt.Errorf("%s", message)
+}
+
+func axoneHTTPError(statusCode int, bodyBytes []byte) error {
+	var resp struct {
+		Message string `json:"message"`
+	}
+	if err := common.Unmarshal(bodyBytes, &resp); err == nil {
+		if message := strings.TrimSpace(resp.Message); message != "" {
+			return fmt.Errorf("%s", message)
+		}
+	}
+
+	body := strings.TrimSpace(string(bodyBytes))
+	if body != "" {
+		return fmt.Errorf("%s", body)
+	}
+	return fmt.Errorf("AXOne request failed with status %d", statusCode)
 }
 
 func md5Hex(value string) string {
