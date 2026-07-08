@@ -26,12 +26,14 @@ import {
   IllustrationConstructionDark,
 } from '@douyinfe/semi-illustrations';
 import { useTranslation } from 'react-i18next';
+import { about as aboutZhCN } from './zh-cn';
 
 const About = () => {
   const { t } = useTranslation();
   const [about, setAbout] = useState('');
   const [aboutLoaded, setAboutLoaded] = useState(false);
   const currentYear = new Date().getFullYear();
+  const isChinese = i18n.language.startsWith('zh');
 
   const displayAbout = async () => {
     setAbout(localStorage.getItem('about') || '');
@@ -161,7 +163,7 @@ const About = () => {
           ) : (
             <div
               style={{ fontSize: 'larger' }}
-              dangerouslySetInnerHTML={{ __html: about }}
+              dangerouslySetInnerHTML={{ __html: isChinese ? aboutZhCN : about }}
             ></div>
           )}
         </>
