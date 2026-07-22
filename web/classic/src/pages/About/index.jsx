@@ -33,6 +33,7 @@ const About = () => {
   const [about, setAbout] = useState('');
   const [aboutLoaded, setAboutLoaded] = useState(false);
   const currentYear = new Date().getFullYear();
+  const { i18n} = useTranslation();
   const isChinese = i18n.language.startsWith('zh');
 
   const displayAbout = async () => {
