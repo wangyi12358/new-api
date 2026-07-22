@@ -314,7 +314,7 @@ func verifyAlipayNotify(params map[string]string) bool {
 		return false
 	}
 
-	content := buildAlipaySignContent(params)
+	content := buildAlipayNotifySignContent(params)
 	signature, err := base64.StdEncoding.DecodeString(sign)
 	if err != nil {
 		return false
@@ -325,7 +325,7 @@ func verifyAlipayNotify(params map[string]string) bool {
 }
 
 func signAlipayParams(params map[string]string, privateKey *rsa.PrivateKey) (string, error) {
-	content := buildAlipaySignContent(params)
+	content := buildAlipayRequestSignContent(params)
 	hashed := sha256.Sum256([]byte(content))
 	signature, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, hashed[:])
 	if err != nil {
@@ -334,10 +334,18 @@ func signAlipayParams(params map[string]string, privateKey *rsa.PrivateKey) (str
 	return base64.StdEncoding.EncodeToString(signature), nil
 }
 
-func buildAlipaySignContent(params map[string]string) string {
+func buildAlipayRequestSignContent(params map[string]string) string {
+	return buildAlipaySignContent(params, false)
+}
+
+func buildAlipayNotifySignContent(params map[string]string) string {
+	return buildAlipaySignContent(params, true)
+}
+
+func buildAlipaySignContent(params map[string]string, excludeSignType bool) string {
 	keys := make([]string, 0, len(params))
 	for key, value := range params {
-		if key == "sign" || key == "sign_type" || strings.TrimSpace(value) == "" {
+		if key == "sign" || (excludeSignType && key == "sign_type") || strings.TrimSpace(value) == "" {
 			continue
 		}
 		keys = append(keys, key)
