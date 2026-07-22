@@ -108,13 +108,42 @@ func TestRechargeAlipay_RejectsMismatchedPaymentMethod(t *testing.T) {
 	insertUserForPaymentGuardTest(t, 111, 0)
 	insertTopUpForPaymentGuardTest(t, "alipay-guard", 111, PaymentProviderStripe)
 
-	err := RechargeAlipay("alipay-guard", "127.0.0.1")
+	err := RechargeAlipay("alipay-guard", "9.99", "127.0.0.1")
 	require.Error(t, err)
 
 	topUp := GetTopUpByTradeNo("alipay-guard")
 	require.NotNil(t, topUp)
 	assert.Equal(t, common.TopUpStatusPending, topUp.Status)
 	assert.Equal(t, 0, getUserQuotaForPaymentGuardTest(t, 111))
+}
+
+func TestRechargeAlipay_RejectsMismatchedPaidAmount(t *testing.T) {
+	truncateTables(t)
+
+	insertUserForPaymentGuardTest(t, 112, 0)
+	insertTopUpForPaymentGuardTest(t, "alipay-amount-guard", 112, PaymentProviderAlipay)
+
+	err := RechargeAlipay("alipay-amount-guard", "1.00", "127.0.0.1")
+	require.Error(t, err)
+
+	topUp := GetTopUpByTradeNo("alipay-amount-guard")
+	require.NotNil(t, topUp)
+	assert.Equal(t, common.TopUpStatusPending, topUp.Status)
+	assert.Equal(t, 0, getUserQuotaForPaymentGuardTest(t, 112))
+}
+
+func TestRechargeAlipay_CreditsOriginalUSDAmountAfterMatchingPayment(t *testing.T) {
+	truncateTables(t)
+
+	insertUserForPaymentGuardTest(t, 113, 0)
+	insertTopUpForPaymentGuardTest(t, "alipay-matching-payment", 113, PaymentProviderAlipay)
+
+	require.NoError(t, RechargeAlipay("alipay-matching-payment", "9.99", "127.0.0.1"))
+
+	topUp := GetTopUpByTradeNo("alipay-matching-payment")
+	require.NotNil(t, topUp)
+	assert.Equal(t, common.TopUpStatusSuccess, topUp.Status)
+	assert.Equal(t, int(2*common.QuotaPerUnit), getUserQuotaForPaymentGuardTest(t, 113))
 }
 
 func TestUpdatePendingTopUpStatus_RejectsMismatchedPaymentProvider(t *testing.T) {

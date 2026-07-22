@@ -144,7 +144,6 @@ const BILLING_SECTIONS = [
           AlipayAppID: settings.AlipayAppID,
           AlipayPrivateKey: settings.AlipayPrivateKey,
           AlipayPublicKey: settings.AlipayPublicKey,
-          AlipayUnitPrice: settings.AlipayUnitPrice,
           AlipayMinTopUp: settings.AlipayMinTopUp,
           AlipayNotifyURL: settings.AlipayNotifyURL,
           AlipayReturnURL: settings.AlipayReturnURL,

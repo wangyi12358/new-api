@@ -36,7 +36,6 @@ export default function SettingsPaymentGatewayAlipay(props) {
     AlipayAppID: '',
     AlipayPrivateKey: '',
     AlipayPublicKey: '',
-    AlipayUnitPrice: 8.0,
     AlipayMinTopUp: 1,
     AlipayNotifyURL: '',
     AlipayReturnURL: '',
@@ -51,10 +50,6 @@ export default function SettingsPaymentGatewayAlipay(props) {
         AlipayAppID: props.options.AlipayAppID || '',
         AlipayPrivateKey: props.options.AlipayPrivateKey || '',
         AlipayPublicKey: props.options.AlipayPublicKey || '',
-        AlipayUnitPrice:
-          props.options.AlipayUnitPrice !== undefined
-            ? parseFloat(props.options.AlipayUnitPrice)
-            : 8.0,
         AlipayMinTopUp:
           props.options.AlipayMinTopUp !== undefined
             ? parseFloat(props.options.AlipayMinTopUp)
@@ -103,15 +98,6 @@ export default function SettingsPaymentGatewayAlipay(props) {
         options.push({
           key: 'AlipayPublicKey',
           value: inputs.AlipayPublicKey,
-        });
-      }
-      if (
-        inputs.AlipayUnitPrice !== undefined &&
-        inputs.AlipayUnitPrice !== null
-      ) {
-        options.push({
-          key: 'AlipayUnitPrice',
-          value: inputs.AlipayUnitPrice.toString(),
         });
       }
       if (
@@ -209,15 +195,6 @@ export default function SettingsPaymentGatewayAlipay(props) {
                 field='AlipayAppID'
                 label={t('App ID')}
                 placeholder={t('例如：2021000xxxxxxxxx')}
-              />
-            </Col>
-            <Col xs={24} sm={24} md={8} lg={8} xl={8}>
-              <Form.InputNumber
-                field='AlipayUnitPrice'
-                precision={2}
-                label={t('充值价格（x元/美金）')}
-                placeholder={t('例如：7，就是7元/美金')}
-                extraText={t('按 1 美元对应的站内价格填写')}
               />
             </Col>
             <Col xs={24} sm={24} md={8} lg={8} xl={8}>

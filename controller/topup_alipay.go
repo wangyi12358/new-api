@@ -26,6 +26,7 @@ import (
 	"github.com/QuantumNous/new-api/setting/operation_setting"
 
 	"github.com/gin-gonic/gin"
+	"github.com/shopspring/decimal"
 	"github.com/thanhpk/randstr"
 )
 
@@ -59,7 +60,12 @@ func (*AlipayAdaptor) RequestAmount(c *gin.Context, req *AlipayPayRequest) {
 		return
 	}
 
-	payMoney := getAlipayPayMoney(float64(req.Amount), group)
+	payMoney, _, err := getAlipayPayMoney(c.Request.Context(), float64(req.Amount), group)
+	if err != nil {
+		logger.LogError(c.Request.Context(), fmt.Sprintf("获取支付宝实时汇率失败 user_id=%d amount=%d error=%q", id, req.Amount, err.Error()))
+		c.JSON(http.StatusServiceUnavailable, gin.H{"message": "error", "data": "暂时无法获取 USD/CNY 实时汇率，请稍后重试"})
+		return
+	}
 	if payMoney <= 0.01 {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "充值金额过低"})
 		return
@@ -96,12 +102,24 @@ func (*AlipayAdaptor) RequestPay(c *gin.Context, req *AlipayPayRequest) {
 
 	reference := fmt.Sprintf("new-api-alipay-ref-%d-%d-%s", user.Id, time.Now().UnixMilli(), randstr.String(4))
 	referenceId := "ref_" + common.Sha1([]byte(reference))
-	payMoney := getAlipayPayMoney(float64(req.Amount), group)
+	payMoney, exchangeRate, err := getAlipayPayMoney(c.Request.Context(), float64(req.Amount), group)
+	if err != nil {
+		logger.LogError(c.Request.Context(), fmt.Sprintf("获取支付宝实时汇率失败 user_id=%d amount=%d error=%q", id, req.Amount, err.Error()))
+		c.JSON(http.StatusServiceUnavailable, gin.H{"message": "暂时无法获取 USD/CNY 实时汇率，请稍后重试", "data": nil})
+		return
+	}
 
 	payLink, err := genAlipayLink(c.Request.Context(), referenceId, payMoney)
 	if err != nil {
 		logger.LogError(c.Request.Context(), fmt.Sprintf("支付宝创建支付链接失败 user_id=%d trade_no=%s amount=%d error=%q", id, referenceId, req.Amount, err.Error()))
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "拉起支付失败"})
+		return
+	}
+
+	exchangeRatePayload, err := common.Marshal(exchangeRate)
+	if err != nil {
+		logger.LogError(c.Request.Context(), fmt.Sprintf("序列化支付宝汇率快照失败 user_id=%d trade_no=%s error=%q", id, referenceId, err.Error()))
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "创建订单失败", "data": nil})
 		return
 	}
 
@@ -112,6 +130,7 @@ func (*AlipayAdaptor) RequestPay(c *gin.Context, req *AlipayPayRequest) {
 		TradeNo:         referenceId,
 		PaymentMethod:   model.PaymentMethodAlipay,
 		PaymentProvider: model.PaymentProviderAlipay,
+		ProviderPayload: string(exchangeRatePayload),
 		CreateTime:      time.Now().Unix(),
 		Status:          common.TopUpStatusPending,
 	}
@@ -121,7 +140,7 @@ func (*AlipayAdaptor) RequestPay(c *gin.Context, req *AlipayPayRequest) {
 		return
 	}
 
-	logger.LogInfo(c.Request.Context(), fmt.Sprintf("支付宝充值订单创建成功 user_id=%d trade_no=%s amount=%d money=%.2f", id, referenceId, req.Amount, payMoney))
+	logger.LogInfo(c.Request.Context(), fmt.Sprintf("支付宝充值订单创建成功 user_id=%d trade_no=%s amount_usd=%d money_cny=%.2f usd_cny_rate=%.6f rate_source=%q", id, referenceId, req.Amount, payMoney, exchangeRate.Rate, exchangeRate.Source))
 	c.JSON(http.StatusOK, gin.H{
 		"message": "success",
 		"data": gin.H{
@@ -201,7 +220,7 @@ func AlipayNotify(c *gin.Context) {
 	LockOrder(referenceId)
 	defer UnlockOrder(referenceId)
 
-	if err := model.RechargeAlipay(referenceId, c.ClientIP()); err != nil {
+	if err := model.RechargeAlipay(referenceId, params["total_amount"], c.ClientIP()); err != nil {
 		logger.LogError(ctx, fmt.Sprintf("支付宝充值处理失败 trade_no=%s alipay_trade_no=%s client_ip=%s error=%q", referenceId, params["trade_no"], c.ClientIP(), err.Error()))
 		c.String(http.StatusInternalServerError, "failure")
 		return
@@ -279,7 +298,12 @@ func formatAlipayAmount(amount float64) string {
 	return strconv.FormatFloat(amount, 'f', 2, 64)
 }
 
-func getAlipayPayMoney(amount float64, group string) float64 {
+func getAlipayPayMoney(ctx context.Context, amount float64, group string) (float64, service.ExchangeRateQuote, error) {
+	exchangeRate, err := service.GetUSDToCNYExchangeRate(ctx)
+	if err != nil {
+		return 0, service.ExchangeRateQuote{}, err
+	}
+
 	originalAmount := amount
 	if operation_setting.GetQuotaDisplayType() == operation_setting.QuotaDisplayTypeTokens {
 		amount = amount / common.QuotaPerUnit
@@ -292,7 +316,17 @@ func getAlipayPayMoney(amount float64, group string) float64 {
 	if ds, ok := operation_setting.GetPaymentSetting().AmountDiscount[int(originalAmount)]; ok && ds > 0 {
 		discount = ds
 	}
-	return amount * setting.AlipayUnitPrice * topupGroupRatio * discount
+	payMoney := calculateAlipayPayMoney(amount, exchangeRate.Rate, topupGroupRatio, discount)
+	return payMoney, exchangeRate, nil
+}
+
+func calculateAlipayPayMoney(amount, exchangeRate, topupGroupRatio, discount float64) float64 {
+	return decimal.NewFromFloat(amount).
+		Mul(decimal.NewFromFloat(exchangeRate)).
+		Mul(decimal.NewFromFloat(topupGroupRatio)).
+		Mul(decimal.NewFromFloat(discount)).
+		Round(2).
+		InexactFloat64()
 }
 
 func getAlipayMinTopup() int64 {

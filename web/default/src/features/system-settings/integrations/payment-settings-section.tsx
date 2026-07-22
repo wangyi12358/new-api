@@ -128,7 +128,6 @@ const paymentSchema = z.object({
   AlipayAppID: z.string(),
   AlipayPrivateKey: z.string(),
   AlipayPublicKey: z.string(),
-  AlipayUnitPrice: z.coerce.number().min(0),
   AlipayMinTopUp: z.coerce.number().min(0),
   AlipayNotifyURL: z.string().refine((value) => {
     const trimmed = value.trim()
@@ -320,7 +319,6 @@ export function PaymentSettingsSection({
       AlipayAppID: values.AlipayAppID.trim(),
       AlipayPrivateKey: values.AlipayPrivateKey.trim(),
       AlipayPublicKey: values.AlipayPublicKey.trim(),
-      AlipayUnitPrice: values.AlipayUnitPrice,
       AlipayMinTopUp: values.AlipayMinTopUp,
       AlipayNotifyURL: removeTrailingSlash(values.AlipayNotifyURL),
       AlipayReturnURL: removeTrailingSlash(values.AlipayReturnURL),
@@ -352,7 +350,6 @@ export function PaymentSettingsSection({
       AlipayAppID: initialRef.current.AlipayAppID.trim(),
       AlipayPrivateKey: initialRef.current.AlipayPrivateKey.trim(),
       AlipayPublicKey: initialRef.current.AlipayPublicKey.trim(),
-      AlipayUnitPrice: initialRef.current.AlipayUnitPrice,
       AlipayMinTopUp: initialRef.current.AlipayMinTopUp,
       AlipayNotifyURL: removeTrailingSlash(initialRef.current.AlipayNotifyURL),
       AlipayReturnURL: removeTrailingSlash(initialRef.current.AlipayReturnURL),
@@ -451,10 +448,6 @@ export function PaymentSettingsSection({
         key: 'AlipayPublicKey',
         value: sanitized.AlipayPublicKey,
       })
-    }
-
-    if (sanitized.AlipayUnitPrice !== initial.AlipayUnitPrice) {
-      updates.push({ key: 'AlipayUnitPrice', value: sanitized.AlipayUnitPrice })
     }
 
     if (sanitized.AlipayMinTopUp !== initial.AlipayMinTopUp) {
@@ -1004,33 +997,6 @@ export function PaymentSettingsSection({
                     </FormControl>
                     <FormDescription>
                       {t('Alipay application App ID')}
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name='AlipayUnitPrice'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      {t('Unit price (local currency / USD)')}
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        type='number'
-                        step='0.01'
-                        min={0}
-                        value={(field.value ?? 0) as number}
-                        onChange={(event) =>
-                          field.onChange(event.target.valueAsNumber)
-                        }
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      {t('Cash amount charged through Alipay for each USD of balance')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

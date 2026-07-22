@@ -32,3 +32,8 @@ func TestBuildAlipayNotifySignContentExcludesSignAndSignType(t *testing.T) {
 
 	require.Equal(t, "app_id=2021000111111111&trade_no=2026072200001", content)
 }
+
+func TestCalculateAlipayPayMoneyUsesUSDToCNYRate(t *testing.T) {
+	require.Equal(t, 6.77, calculateAlipayPayMoney(1, 6.7734, 1, 1))
+	require.Equal(t, 12.19, calculateAlipayPayMoney(2, 6.7734, 1, 0.9))
+}

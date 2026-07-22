@@ -171,9 +171,13 @@ func Recharge(referenceId string, customerId string, callerIp string) (err error
 	return nil
 }
 
-func RechargeAlipay(referenceId string, callerIp string) (err error) {
+func RechargeAlipay(referenceId string, paidAmount string, callerIp string) (err error) {
 	if referenceId == "" {
 		return errors.New("未提供支付单号")
+	}
+	paidAmountDecimal, err := decimal.NewFromString(strings.TrimSpace(paidAmount))
+	if err != nil || !paidAmountDecimal.IsPositive() {
+		return errors.New("无效的支付宝实付金额")
 	}
 
 	var quotaToAdd int
@@ -192,6 +196,11 @@ func RechargeAlipay(referenceId string, callerIp string) (err error) {
 
 		if topUp.PaymentProvider != PaymentProviderAlipay {
 			return ErrPaymentMethodMismatch
+		}
+
+		expectedAmount := decimal.NewFromFloat(topUp.Money).Round(2)
+		if !paidAmountDecimal.Round(2).Equal(expectedAmount) {
+			return fmt.Errorf("支付宝实付金额不匹配: paid=%s expected=%s", paidAmountDecimal.StringFixed(2), expectedAmount.StringFixed(2))
 		}
 
 		if topUp.Status == common.TopUpStatusSuccess {
