@@ -19,12 +19,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.prod
-    image: new-api-local:latest
-    container_name: kovar-v2
+    image: new-api-local-wl:latest
+    container_name: kovar-v2-wl
     restart: always
     command: --log-dir /app/logs
     ports:
-      - "4000:3000"
+      - "4001:3000"
     volumes:
       - ./data:/data
       - ./logs:/app/logs
