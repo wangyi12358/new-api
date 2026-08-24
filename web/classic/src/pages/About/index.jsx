@@ -164,7 +164,8 @@ const About = () => {
           ) : (
             <div
               style={{ fontSize: 'larger' }}
-              dangerouslySetInnerHTML={{ __html: isChinese ? aboutZhCN : about }}
+              // dangerouslySetInnerHTML={{ __html: isChinese ? aboutZhCN : about }}
+              dangerouslySetInnerHTML={{ __html: about }}
             ></div>
           )}
         </>

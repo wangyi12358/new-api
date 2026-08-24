@@ -149,11 +149,11 @@ const PageLayout = () => {
 
   return (
     <>
-      <TermsOfUseModal
+      {/* <TermsOfUseModal
         visible={!termsAccepted}
         onAccept={() => setTermsAccepted(true)}
         isMobile={isMobile}
-      />
+      /> */}
       <Layout
       className='app-layout'
       style={{
