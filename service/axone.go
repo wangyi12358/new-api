@@ -66,6 +66,37 @@ type AxonePaymentOrderData struct {
 	PayAddress   string `json:"payAddress"`
 }
 
+type AxonePaygoSessionData struct {
+	SessionID       string  `json:"session_id"`
+	Status          string  `json:"status"`
+	Currency        string  `json:"currency"`
+	ReservedAmount  string  `json:"reserved_amount"`
+	ConsumedAmount  string  `json:"consumed_amount"`
+	RemainingAmount string  `json:"remaining_amount"`
+	LastEventSeq    int64   `json:"last_event_seq"`
+	ExpiresAt       string  `json:"expires_at"`
+	ClosedAt        *string `json:"closed_at"`
+}
+
+type AxonePaygoUsageData struct {
+	SessionID          string `json:"session_id"`
+	AcceptedThroughSeq int64  `json:"accepted_through_seq"`
+	ChargeAmount       string `json:"charge_amount"`
+	ConsumedAmount     string `json:"consumed_amount"`
+	RemainingAmount    string `json:"remaining_amount"`
+}
+
+type axonePaygoCreateSessionRequest struct {
+	WalletID  string `json:"wallet_id"`
+	MaxAmount string `json:"max_amount"`
+}
+
+type axonePaygoUsageRequest struct {
+	EventID      string `json:"event_id"`
+	EventSeq     int64  `json:"event_seq"`
+	ChargeAmount string `json:"charge_amount"`
+}
+
 type AxoneClient struct {
 	configKey  string
 	baseURL    string
@@ -184,6 +215,103 @@ func (c *AxoneClient) CreatePaymentOrder(ctx context.Context, request AxonePayme
 	return &resp.Data, nil
 }
 
+func (c *AxoneClient) CreatePaygoSession(ctx context.Context, walletID string, maxAmount string, idempotencyKey string) (*AxonePaygoSessionData, error) {
+	if err := c.ensureReady(); err != nil {
+		return nil, err
+	}
+	accessToken, err := c.ensureAccessToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	payload := axonePaygoCreateSessionRequest{
+		WalletID:  strings.TrimSpace(walletID),
+		MaxAmount: strings.TrimSpace(maxAmount),
+	}
+	var resp axoneResponse[AxonePaygoSessionData]
+	if err := c.doJSONRequestWithHeaders(ctx, http.MethodPost, "/web/agen-pay/sessions", payload, accessToken, map[string]string{
+		"Idempotency-Key": strings.TrimSpace(idempotencyKey),
+	}, &resp); err != nil {
+		return nil, err
+	}
+	if resp.Code != 0 {
+		return nil, axoneResponseError(resp.Message)
+	}
+	if strings.TrimSpace(resp.Data.SessionID) == "" {
+		return nil, fmt.Errorf("axone returned empty paygo session id")
+	}
+	return &resp.Data, nil
+}
+
+func (c *AxoneClient) SubmitPaygoUsage(ctx context.Context, sessionID string, eventID string, eventSeq int64, chargeAmount string, idempotencyKey string) (*AxonePaygoUsageData, error) {
+	if err := c.ensureReady(); err != nil {
+		return nil, err
+	}
+	accessToken, err := c.ensureAccessToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	payload := axonePaygoUsageRequest{
+		EventID:      strings.TrimSpace(eventID),
+		EventSeq:     eventSeq,
+		ChargeAmount: strings.TrimSpace(chargeAmount),
+	}
+	path := "/web/agen-pay/sessions/" + url.PathEscape(strings.TrimSpace(sessionID)) + "/usage"
+	var resp axoneResponse[AxonePaygoUsageData]
+	if err := c.doJSONRequestWithHeaders(ctx, http.MethodPost, path, payload, accessToken, map[string]string{
+		"Idempotency-Key": strings.TrimSpace(idempotencyKey),
+	}, &resp); err != nil {
+		return nil, err
+	}
+	if resp.Code != 0 {
+		return nil, axoneResponseError(resp.Message)
+	}
+	return &resp.Data, nil
+}
+
+func (c *AxoneClient) GetPaygoSession(ctx context.Context, sessionID string) (*AxonePaygoSessionData, error) {
+	if err := c.ensureReady(); err != nil {
+		return nil, err
+	}
+	accessToken, err := c.ensureAccessToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	path := "/web/agen-pay/sessions/" + url.PathEscape(strings.TrimSpace(sessionID))
+	var resp axoneResponse[AxonePaygoSessionData]
+	if err := c.doJSONRequest(ctx, http.MethodGet, path, nil, accessToken, &resp); err != nil {
+		return nil, err
+	}
+	if resp.Code != 0 {
+		return nil, axoneResponseError(resp.Message)
+	}
+	return &resp.Data, nil
+}
+
+func (c *AxoneClient) ClosePaygoSession(ctx context.Context, sessionID string, idempotencyKey string) (*AxonePaygoSessionData, error) {
+	if err := c.ensureReady(); err != nil {
+		return nil, err
+	}
+	accessToken, err := c.ensureAccessToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	path := "/web/agen-pay/sessions/" + url.PathEscape(strings.TrimSpace(sessionID)) + "/close"
+	var resp axoneResponse[AxonePaygoSessionData]
+	if err := c.doJSONRequestWithHeaders(ctx, http.MethodPost, path, nil, accessToken, map[string]string{
+		"Idempotency-Key": strings.TrimSpace(idempotencyKey),
+	}, &resp); err != nil {
+		return nil, err
+	}
+	if resp.Code != 0 {
+		return nil, axoneResponseError(resp.Message)
+	}
+	return &resp.Data, nil
+}
+
 func (c *AxoneClient) ensureReady() error {
 	if c.baseURL == "" {
 		return fmt.Errorf("axone base url is empty")
@@ -277,6 +405,10 @@ func (c *AxoneClient) refreshLocked(ctx context.Context) error {
 }
 
 func (c *AxoneClient) doJSONRequest(ctx context.Context, method string, path string, payload any, accessToken string, target any) error {
+	return c.doJSONRequestWithHeaders(ctx, method, path, payload, accessToken, nil, target)
+}
+
+func (c *AxoneClient) doJSONRequestWithHeaders(ctx context.Context, method string, path string, payload any, accessToken string, headers map[string]string, target any) error {
 	fullURL := c.baseURL + path
 
 	var body io.Reader
@@ -298,6 +430,11 @@ func (c *AxoneClient) doJSONRequest(ctx context.Context, method string, path str
 	}
 	if accessToken != "" {
 		req.Header.Set("Authorization", "Bearer "+accessToken)
+	}
+	for key, value := range headers {
+		if strings.TrimSpace(value) != "" {
+			req.Header.Set(key, value)
+		}
 	}
 
 	resp, err := c.httpClient.Do(req)

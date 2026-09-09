@@ -18,8 +18,21 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Banner, Button, Col, Form, Row, Spin, Typography } from '@douyinfe/semi-ui';
-import { API, removeTrailingSlash, showError, showSuccess } from '../../../helpers';
+import {
+  Banner,
+  Button,
+  Col,
+  Form,
+  Row,
+  Spin,
+  Typography,
+} from '@douyinfe/semi-ui';
+import {
+  API,
+  removeTrailingSlash,
+  showError,
+  showSuccess,
+} from '../../../helpers';
 import { useTranslation } from 'react-i18next';
 import { Coins } from 'lucide-react';
 
@@ -38,6 +51,9 @@ export default function SettingsPaymentGatewayAxone(props) {
     AxoneWebhookPublicKey: '',
     AxoneCurrencies: 'USDT,USDC',
     AxoneFeePercent: 0,
+    AxonePaygoEnabled: false,
+    AxonePaygoChargeMode: 'per_request',
+    AxonePaygoChargeThreshold: '1.00000000',
   });
   const formApiRef = useRef(null);
 
@@ -51,6 +67,11 @@ export default function SettingsPaymentGatewayAxone(props) {
         AxoneWebhookPublicKey: props.options.AxoneWebhookPublicKey || '',
         AxoneCurrencies: props.options.AxoneCurrencies || 'USDT,USDC',
         AxoneFeePercent: Number(props.options.AxoneFeePercent) || 0,
+        AxonePaygoEnabled: toBoolean(props.options.AxonePaygoEnabled),
+        AxonePaygoChargeMode:
+          props.options.AxonePaygoChargeMode || 'per_request',
+        AxonePaygoChargeThreshold:
+          props.options.AxonePaygoChargeThreshold || '1.00000000',
       };
       setInputs(currentInputs);
       formApiRef.current.setValues(currentInputs);
@@ -66,24 +87,12 @@ export default function SettingsPaymentGatewayAxone(props) {
     try {
       const options = [
         {
-          key: 'AxoneEnabled',
-          value: inputs.AxoneEnabled ? 'true' : 'false',
-        },
-        {
           key: 'AxoneBaseURL',
           value: removeTrailingSlash(inputs.AxoneBaseURL || ''),
         },
         {
           key: 'AxoneAccount',
           value: (inputs.AxoneAccount || '').trim(),
-        },
-        {
-          key: 'AxonePassword',
-          value: inputs.AxonePassword || '',
-        },
-        {
-          key: 'AxoneWebhookPublicKey',
-          value: inputs.AxoneWebhookPublicKey || '',
         },
         {
           key: 'AxoneCurrencies',
@@ -93,28 +102,54 @@ export default function SettingsPaymentGatewayAxone(props) {
           key: 'AxoneFeePercent',
           value: String(Math.max(0, Number(inputs.AxoneFeePercent) || 0)),
         },
+        {
+          key: 'AxonePaygoChargeMode',
+          value: inputs.AxonePaygoChargeMode || 'per_request',
+        },
+        {
+          key: 'AxonePaygoChargeThreshold',
+          value: (inputs.AxonePaygoChargeThreshold || '').trim(),
+        },
       ];
 
-      const results = await Promise.all(
-        options.map((opt) =>
-          API.put('/api/option/', {
-            key: opt.key,
-            value: opt.value,
-          }),
-        ),
+      if (inputs.AxonePassword) {
+        options.push({ key: 'AxonePassword', value: inputs.AxonePassword });
+      }
+      if (inputs.AxoneWebhookPublicKey) {
+        options.push({
+          key: 'AxoneWebhookPublicKey',
+          value: inputs.AxoneWebhookPublicKey,
+        });
+      }
+      options.push(
+        {
+          key: 'AxoneEnabled',
+          value: inputs.AxoneEnabled ? 'true' : 'false',
+        },
+        {
+          key: 'AxonePaygoEnabled',
+          value: inputs.AxonePaygoEnabled ? 'true' : 'false',
+        },
       );
 
-      const errorResults = results.filter((res) => !res.data.success);
-      if (errorResults.length > 0) {
-        errorResults.forEach((res) => showError(res.data.message));
-      } else {
-        showSuccess(t('更新成功'));
-        props.refresh?.();
+      for (const option of options) {
+        const response = await API.put('/api/option/', {
+          key: option.key,
+          value: option.value,
+        });
+        if (!response.data.success) {
+          showError(response.data.message);
+          return;
+        }
       }
+
+      showSuccess(t('更新成功'));
+      props.refresh?.();
     } catch (error) {
       showError(t('更新失败'));
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -192,9 +227,7 @@ export default function SettingsPaymentGatewayAxone(props) {
                 field='AxoneCurrencies'
                 label={t('可选币种')}
                 placeholder='USDT,USDC'
-                extraText={t(
-                  '用英文逗号分隔用户可选的币种，例如：USDT,USDC',
-                )}
+                extraText={t('用英文逗号分隔用户可选的币种，例如：USDT,USDC')}
               />
             </Col>
 
@@ -206,7 +239,58 @@ export default function SettingsPaymentGatewayAxone(props) {
                 step={0.01}
                 precision={2}
                 placeholder='0'
-                extraText={t('用户稳定币转账金额会按该百分比增加，例如 1 表示 1% 手续费')}
+                extraText={t(
+                  '用户稳定币转账金额会按该百分比增加，例如 1 表示 1% 手续费',
+                )}
+              />
+            </Col>
+
+            <Col span={24}>
+              <Banner
+                type='info'
+                title={t('AXOne 流式支付')}
+                description={t(
+                  '携带 Kovar 支付会话的 AI 请求将使用 AXOne 锁定余额，不再扣除平台内部余额。',
+                )}
+                closeIcon={null}
+                fullMode={false}
+                style={{ marginBottom: 8 }}
+              />
+            </Col>
+
+            <Col span={24}>
+              <Form.Switch
+                field='AxonePaygoEnabled'
+                label={t('启用 AXOne 流式支付')}
+                checkedText={t('已启用')}
+                uncheckedText={t('已禁用')}
+              />
+            </Col>
+
+            <Col xs={24} md={12}>
+              <Form.Select
+                field='AxonePaygoChargeMode'
+                label={t('AXOne 扣款模式')}
+                optionList={[
+                  {
+                    value: 'per_request',
+                    label: t('每次 AI 请求后扣款'),
+                  },
+                  {
+                    value: 'threshold',
+                    label: t('达到金额阈值后扣款'),
+                  },
+                ]}
+              />
+            </Col>
+
+            <Col xs={24} md={12}>
+              <Form.Input
+                field='AxonePaygoChargeThreshold'
+                label={t('AXOne 扣款阈值')}
+                placeholder='1.00000000'
+                disabled={inputs.AxonePaygoChargeMode !== 'threshold'}
+                extraText={t('支持最多 8 位小数的 USDC 或 USDT 金额。')}
               />
             </Col>
 

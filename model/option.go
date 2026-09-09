@@ -107,6 +107,9 @@ func InitOptionMap() {
 	common.OptionMap["AxoneWebhookPublicKey"] = setting.AxoneWebhookPublicKey
 	common.OptionMap["AxoneCurrencies"] = setting.AxoneCurrencies
 	common.OptionMap["AxoneFeePercent"] = strconv.FormatFloat(setting.GetAxoneFeePercent(), 'f', -1, 64)
+	common.OptionMap["AxonePaygoEnabled"] = strconv.FormatBool(setting.AxonePaygoEnabled)
+	common.OptionMap["AxonePaygoChargeMode"] = setting.GetAxonePaygoChargeMode()
+	common.OptionMap["AxonePaygoChargeThreshold"] = setting.AxonePaygoChargeThreshold
 	common.OptionMap["WaffoEnabled"] = strconv.FormatBool(setting.WaffoEnabled)
 	common.OptionMap["WaffoApiKey"] = setting.WaffoApiKey
 	common.OptionMap["WaffoPrivateKey"] = setting.WaffoPrivateKey
@@ -466,6 +469,12 @@ func updateOptionMap(key string, value string) (err error) {
 		setting.AxoneCurrencies = value
 	case "AxoneFeePercent":
 		setting.AxoneFeePercent, _ = strconv.ParseFloat(strings.TrimSuffix(strings.TrimSpace(value), "%"), 64)
+	case "AxonePaygoEnabled":
+		setting.AxonePaygoEnabled = value == "true"
+	case "AxonePaygoChargeMode":
+		setting.AxonePaygoChargeMode = value
+	case "AxonePaygoChargeThreshold":
+		setting.AxonePaygoChargeThreshold = value
 	case "WaffoEnabled":
 		setting.WaffoEnabled = value == "true"
 	case "WaffoApiKey":

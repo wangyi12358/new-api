@@ -11,6 +11,18 @@ var AxoneWebhookPublicKey = ""
 var AxoneCurrencies = "USDT,USDC"
 var AxoneFeePercent = 0.0
 
+const (
+	AxonePaygoChargeModePerRequest = "per_request"
+	AxonePaygoChargeModeThreshold  = "threshold"
+)
+
+// AXOne PayGo is independent from the stablecoin top-up switch. Keeping the
+// switches separate prevents enabling metered billing before its session
+// workflow is configured and verified.
+var AxonePaygoEnabled = false
+var AxonePaygoChargeMode = AxonePaygoChargeModePerRequest
+var AxonePaygoChargeThreshold = "1.00000000"
+
 func GetAxoneFeePercent() float64 {
 	if AxoneFeePercent < 0 {
 		return 0
@@ -34,4 +46,11 @@ func GetAxoneCurrencies() []string {
 		currencies = append(currencies, normalized)
 	}
 	return currencies
+}
+
+func GetAxonePaygoChargeMode() string {
+	if strings.EqualFold(strings.TrimSpace(AxonePaygoChargeMode), AxonePaygoChargeModeThreshold) {
+		return AxonePaygoChargeModeThreshold
+	}
+	return AxonePaygoChargeModePerRequest
 }

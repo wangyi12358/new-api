@@ -167,6 +167,10 @@ const BILLING_SECTIONS = [
           AxoneWebhookPublicKey: settings.AxoneWebhookPublicKey ?? '',
           AxoneCurrencies: settings.AxoneCurrencies ?? 'USDT,USDC',
           AxoneFeePercent: settings.AxoneFeePercent ?? 0,
+          AxonePaygoEnabled: settings.AxonePaygoEnabled ?? false,
+          AxonePaygoChargeMode: settings.AxonePaygoChargeMode ?? 'per_request',
+          AxonePaygoChargeThreshold:
+            settings.AxonePaygoChargeThreshold ?? '1.00000000',
         }}
         waffoDefaultValues={{
           WaffoEnabled: settings.WaffoEnabled ?? false,

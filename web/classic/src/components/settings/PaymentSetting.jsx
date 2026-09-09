@@ -66,8 +66,12 @@ const PaymentSetting = () => {
     AxoneBaseURL: '',
     AxoneAccount: '',
     AxonePassword: '',
+    AxoneWebhookPublicKey: '',
     AxoneCurrencies: 'USDT,USDC',
     AxoneFeePercent: 0,
+    AxonePaygoEnabled: false,
+    AxonePaygoChargeMode: 'per_request',
+    AxonePaygoChargeThreshold: '1.00000000',
 
     'payment_setting.compliance_confirmed': false,
     'payment_setting.compliance_terms_version': '',

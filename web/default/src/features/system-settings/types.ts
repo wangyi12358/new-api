@@ -256,6 +256,9 @@ export type BillingSettings = {
   AxoneWebhookPublicKey: string
   AxoneCurrencies: string
   AxoneFeePercent: number
+  AxonePaygoEnabled: boolean
+  AxonePaygoChargeMode: string
+  AxonePaygoChargeThreshold: string
   WaffoEnabled: boolean
   WaffoApiKey: string
   WaffoPrivateKey: string

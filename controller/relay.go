@@ -66,6 +66,7 @@ func geminiRelayHandler(c *gin.Context, info *relaycommon.RelayInfo) *types.NewA
 }
 
 func Relay(c *gin.Context, relayFormat types.RelayFormat) {
+	prepareAxonePaygoHeader(c)
 
 	requestId := c.GetString(common.RequestIdKey)
 	//group := common.GetContextKeyString(c, constant.ContextKeyUsingGroup)
@@ -468,6 +469,7 @@ func RelayNotFound(c *gin.Context) {
 }
 
 func RelayTaskFetch(c *gin.Context) {
+	prepareAxonePaygoHeader(c)
 	relayInfo, err := relaycommon.GenRelayInfo(c, types.RelayFormatTask, nil, nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, &dto.TaskError{
@@ -483,6 +485,7 @@ func RelayTaskFetch(c *gin.Context) {
 }
 
 func RelayTask(c *gin.Context) {
+	prepareAxonePaygoHeader(c)
 	relayInfo, err := relaycommon.GenRelayInfo(c, types.RelayFormatTask, nil, nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, &dto.TaskError{
@@ -600,6 +603,14 @@ func RelayTask(c *gin.Context) {
 	if taskErr != nil {
 		respondTaskError(c, taskErr)
 	}
+}
+
+func prepareAxonePaygoHeader(c *gin.Context) {
+	sessionID := strings.TrimSpace(c.GetHeader(service.AxonePaygoHeader))
+	if sessionID != "" {
+		c.Set(service.AxonePaygoContextKey, sessionID)
+	}
+	c.Request.Header.Del(service.AxonePaygoHeader)
 }
 
 // respondTaskError 统一输出 Task 错误响应（含 429 限流提示改写）

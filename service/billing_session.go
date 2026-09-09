@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -45,7 +46,7 @@ func (s *BillingSession) Settle(actualQuota int) error {
 		return nil
 	}
 	delta := actualQuota - s.preConsumedQuota
-	if delta == 0 {
+	if delta == 0 && s.funding.Source() != BillingSourceAxone {
 		s.settled = true
 		return nil
 	}
@@ -58,7 +59,7 @@ func (s *BillingSession) Settle(actualQuota int) error {
 	}
 	// 2) 调整令牌额度
 	var tokenErr error
-	if !s.relayInfo.IsPlayground {
+	if !s.relayInfo.IsPlayground && delta != 0 {
 		if delta > 0 {
 			tokenErr = model.DecreaseTokenQuota(s.relayInfo.TokenId, s.relayInfo.TokenKey, delta)
 		} else {
@@ -213,6 +214,12 @@ func (s *BillingSession) preConsume(c *gin.Context, quota int) *types.NewAPIErro
 			}
 			s.tokenConsumed = 0
 		}
+		if errors.Is(err, ErrAxonePaygoInsufficientReserved) || errors.Is(err, ErrAxonePaygoSessionUnavailable) {
+			return types.NewErrorWithStatusCode(err, types.ErrorCodeInsufficientUserQuota, http.StatusPaymentRequired, types.ErrOptionWithSkipRetry(), types.ErrOptionWithNoRecordErrorLog())
+		}
+		if errors.Is(err, ErrAxonePaygoSessionNotFound) || errors.Is(err, ErrAxonePaygoIdempotencyConflict) {
+			return types.NewErrorWithStatusCode(err, types.ErrorCodeInvalidRequest, http.StatusConflict, types.ErrOptionWithSkipRetry())
+		}
 		// TODO: model 层应定义哨兵错误（如 ErrNoActiveSubscription），用 errors.Is 替代字符串匹配
 		errMsg := err.Error()
 		if strings.Contains(errMsg, "no active subscription") || strings.Contains(errMsg, "subscription quota insufficient") {
@@ -248,6 +255,8 @@ func (s *BillingSession) reserveFunding(delta int) error {
 			)
 		}
 		return nil
+	case *AxoneFunding:
+		return funding.Reserve(s.preConsumedQuota + delta)
 	default:
 		return types.NewError(fmt.Errorf("unsupported funding source: %s", s.funding.Source()), types.ErrorCodeUpdateDataError, types.ErrOptionWithSkipRetry())
 	}
@@ -265,6 +274,8 @@ func (s *BillingSession) rollbackFundingReserve(delta int) {
 		if err := model.PostConsumeUserSubscriptionDelta(funding.subscriptionId, -int64(delta)); err != nil {
 			common.SysLog("error rolling back subscription funding reserve: " + err.Error())
 		}
+	case *AxoneFunding:
+		funding.RollbackReserve(delta)
 	}
 }
 
@@ -342,6 +353,29 @@ func (s *BillingSession) syncRelayInfo() {
 func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preConsumedQuota int) (*BillingSession, *types.NewAPIError) {
 	if relayInfo == nil {
 		return nil, types.NewError(fmt.Errorf("relayInfo is nil"), types.ErrorCodeInvalidRequest, types.ErrOptionWithSkipRetry())
+	}
+
+	paygoSessionID := strings.TrimSpace(c.GetString(AxonePaygoContextKey))
+	if paygoSessionID == "" {
+		paygoSessionID = strings.TrimSpace(c.GetHeader(AxonePaygoHeader))
+		c.Request.Header.Del(AxonePaygoHeader)
+	}
+	if paygoSessionID != "" {
+		if !IsAxonePaygoReady() {
+			return nil, types.NewErrorWithStatusCode(ErrAxonePaygoDisabled, types.ErrorCodeInvalidRequest, http.StatusServiceUnavailable, types.ErrOptionWithSkipRetry())
+		}
+		session := &BillingSession{
+			relayInfo: relayInfo,
+			funding: &AxoneFunding{
+				userID:    relayInfo.UserId,
+				sessionID: paygoSessionID,
+				requestID: relayInfo.RequestId,
+			},
+		}
+		if apiErr := session.preConsume(c, preConsumedQuota); apiErr != nil {
+			return nil, apiErr
+		}
+		return session, nil
 	}
 
 	pref := common.NormalizeBillingPreference(relayInfo.UserSetting.BillingPreference)

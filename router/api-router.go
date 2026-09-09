@@ -112,6 +112,10 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.GET("/axone/chains", controller.ListAxoneChains)
 				selfRoute.POST("/axone/address", middleware.CriticalRateLimit(), controller.RequestAxoneAddress)
 				selfRoute.POST("/axone/order", middleware.CriticalRateLimit(), controller.RequestAxoneAddress)
+				selfRoute.POST("/axone/paygo/sessions", middleware.CriticalRateLimit(), controller.CreateAxonePaygoSession)
+				selfRoute.GET("/axone/paygo/sessions", controller.ListAxonePaygoSessions)
+				selfRoute.GET("/axone/paygo/sessions/:id", controller.GetAxonePaygoSession)
+				selfRoute.POST("/axone/paygo/sessions/:id/close", middleware.CriticalRateLimit(), controller.CloseAxonePaygoSession)
 				selfRoute.POST("/aff_transfer", controller.TransferAffQuota)
 				selfRoute.PUT("/setting", controller.UpdateUserSetting)
 

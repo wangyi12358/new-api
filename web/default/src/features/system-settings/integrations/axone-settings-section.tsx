@@ -22,8 +22,22 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { SettingsSwitchField } from '../components/settings-form-layout'
 import { SettingsPageActionsPortal } from '../components/settings-page-context'
@@ -37,6 +51,9 @@ export interface AxoneSettingsValues {
   AxoneWebhookPublicKey: string
   AxoneCurrencies: string
   AxoneFeePercent: number
+  AxonePaygoEnabled: boolean
+  AxonePaygoChargeMode: string
+  AxonePaygoChargeThreshold: string
 }
 
 interface Props {
@@ -67,14 +84,28 @@ export function AxoneSettingsSection({ defaultValues }: Props) {
           value: values.AxoneBaseURL.trim().replace(/\/+$/, ''),
         },
         { key: 'AxoneAccount', value: values.AxoneAccount.trim() },
-        { key: 'AxonePassword', value: values.AxonePassword },
-        { key: 'AxoneWebhookPublicKey', value: values.AxoneWebhookPublicKey },
         { key: 'AxoneCurrencies', value: values.AxoneCurrencies.trim() },
         {
           key: 'AxoneFeePercent',
           value: String(Math.max(0, Number(values.AxoneFeePercent) || 0)),
         },
+        { key: 'AxonePaygoChargeMode', value: values.AxonePaygoChargeMode },
+        {
+          key: 'AxonePaygoChargeThreshold',
+          value: values.AxonePaygoChargeThreshold.trim(),
+        },
+        { key: 'AxonePaygoEnabled', value: String(values.AxonePaygoEnabled) },
       ]
+
+      if (values.AxonePassword) {
+        options.push({ key: 'AxonePassword', value: values.AxonePassword })
+      }
+      if (values.AxoneWebhookPublicKey) {
+        options.push({
+          key: 'AxoneWebhookPublicKey',
+          value: values.AxoneWebhookPublicKey,
+        })
+      }
 
       for (const option of options) {
         await updateOption.mutateAsync(option)
@@ -130,11 +161,15 @@ export function AxoneSettingsSection({ defaultValues }: Props) {
         </div>
 
         <div className='grid gap-1.5 sm:col-span-2'>
-          <Label htmlFor='axone-webhook-public-key'>{t('Webhook public key')}</Label>
+          <Label htmlFor='axone-webhook-public-key'>
+            {t('Webhook public key')}
+          </Label>
           <Textarea
             id='axone-webhook-public-key'
             rows={7}
-            placeholder={t('AXOne public key used to verify webhook signatures')}
+            placeholder={t(
+              'AXOne public key used to verify webhook signatures'
+            )}
             {...form.register('AxoneWebhookPublicKey')}
           />
         </div>
@@ -189,6 +224,66 @@ export function AxoneSettingsSection({ defaultValues }: Props) {
           </p>
         </div>
       </div>
+
+      <FieldGroup className='pt-2'>
+        <Field>
+          <SettingsSwitchField
+            checked={form.watch('AxonePaygoEnabled')}
+            onCheckedChange={(value) =>
+              form.setValue('AxonePaygoEnabled', value)
+            }
+            label={t('Enable AXOne PayGo billing')}
+            className='border-b-0 py-0'
+          />
+          <FieldDescription>
+            {t(
+              'AI requests that provide a Kovar payment session use AXOne reserved balance instead of the internal wallet.'
+            )}
+          </FieldDescription>
+        </Field>
+
+        <Field>
+          <FieldLabel>{t('AXOne PayGo charge mode')}</FieldLabel>
+          <Select
+            value={form.watch('AxonePaygoChargeMode')}
+            onValueChange={(value) =>
+              form.setValue('AxonePaygoChargeMode', value || 'per_request')
+            }
+          >
+            <SelectTrigger className='w-full'>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value='per_request'>
+                  {t('Charge after every AI request')}
+                </SelectItem>
+                <SelectItem value='threshold'>
+                  {t('Charge after reaching the threshold')}
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </Field>
+
+        <Field
+          data-disabled={form.watch('AxonePaygoChargeMode') !== 'threshold'}
+        >
+          <FieldLabel htmlFor='axone-paygo-threshold'>
+            {t('AXOne PayGo charge threshold')}
+          </FieldLabel>
+          <Input
+            id='axone-paygo-threshold'
+            inputMode='decimal'
+            placeholder='1.00000000'
+            disabled={form.watch('AxonePaygoChargeMode') !== 'threshold'}
+            {...form.register('AxonePaygoChargeThreshold')}
+          />
+          <FieldDescription>
+            {t('USDC or USDT amount with up to 8 decimal places.')}
+          </FieldDescription>
+        </Field>
+      </FieldGroup>
     </div>
   )
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/i18n"
 	"github.com/QuantumNous/new-api/model"
+	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/setting"
 	"github.com/QuantumNous/new-api/setting/console_setting"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
@@ -84,6 +85,7 @@ func GetOptions(c *gin.Context) {
 		isSensitiveKey := strings.HasSuffix(k, "Token") ||
 			strings.HasSuffix(k, "Secret") ||
 			strings.HasSuffix(k, "Key") ||
+			strings.HasSuffix(k, "Password") ||
 			strings.HasSuffix(k, "secret") ||
 			strings.HasSuffix(k, "api_key")
 		if isSensitiveKey {
@@ -221,6 +223,22 @@ func UpdateOption(c *gin.Context) {
 				"success": false,
 				"message": "无效的主题值，可选值：default（新版前端）、classic（经典前端）",
 			})
+			return
+		}
+	case "AxonePaygoChargeMode":
+		mode := strings.TrimSpace(option.Value.(string))
+		if mode != setting.AxonePaygoChargeModePerRequest && mode != setting.AxonePaygoChargeModeThreshold {
+			common.ApiErrorMsg(c, "AXOne PayGo charge mode must be per_request or threshold")
+			return
+		}
+	case "AxonePaygoChargeThreshold":
+		if _, err = service.ParseAxoneQ8(option.Value.(string)); err != nil {
+			common.ApiErrorMsg(c, err.Error())
+			return
+		}
+	case "AxonePaygoEnabled":
+		if option.Value == "true" && (strings.TrimSpace(setting.AxoneBaseURL) == "" || strings.TrimSpace(setting.AxoneAccount) == "" || strings.TrimSpace(setting.AxonePassword) == "") {
+			common.ApiErrorMsg(c, "AXOne base URL, account and password are required before enabling PayGo")
 			return
 		}
 	case "GroupRatio":
