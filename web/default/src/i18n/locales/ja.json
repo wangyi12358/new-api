@@ -498,6 +498,7 @@
     "Select a wallet": "ウォレットを選択",
     "Session": "セッション",
     "The lock amount cannot exceed the wallet balance": "ロック金額はウォレット残高を超えることができません",
+    "The newest active payment session is used automatically for Playground and AI API requests. You can still use the X-Kovar-Payment-Session header to select another session.": "最新の有効な支払いセッションが Playground と AI API リクエストに自動的に使用されます。X-Kovar-Payment-Session ヘッダーで別のセッションを指定することもできます。",
     "Up to 8 decimal places": "小数点以下 8 桁まで",
     "AXOne public key used to verify webhook signatures": "AXOne webhook 署名を検証するための公開鍵",
     "AXOne sends payment success notifications to /api/axone/webhook. Configure this path as the merchant callback URL in AXOne.": "AXOne は支払い成功通知を /api/axone/webhook に送信します。このパスを AXOne の加盟店コールバック URL として設定してください。",

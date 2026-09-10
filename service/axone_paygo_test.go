@@ -102,6 +102,28 @@ func TestAxonePaygoReserveFinalizeAndRefund(t *testing.T) {
 	require.Zero(t, session.InFlightQ8)
 }
 
+func TestFindActiveAxonePaygoSessionIDUsesNewestUnexpiredSession(t *testing.T) {
+	db := setupAxonePaygoTestDB(t)
+	now := time.Now().Unix()
+	sessions := []model.AxonePaygoSession{
+		{SessionID: "active_old", UserID: 7, Status: "active", CreateIdempotencyKey: "create-old", ExpiresAt: now + 60, CreatedAt: now - 20, UpdatedAt: now - 20},
+		{SessionID: "expired_newer", UserID: 7, Status: "active", CreateIdempotencyKey: "create-expired", ExpiresAt: now - 1, CreatedAt: now - 10, UpdatedAt: now - 10},
+		{SessionID: "active_newest", UserID: 7, Status: "active", CreateIdempotencyKey: "create-newest", ExpiresAt: 0, CreatedAt: now, UpdatedAt: now},
+		{SessionID: "other_user", UserID: 8, Status: "active", CreateIdempotencyKey: "create-other", ExpiresAt: 0, CreatedAt: now, UpdatedAt: now},
+	}
+	for index := range sessions {
+		require.NoError(t, db.Create(&sessions[index]).Error)
+	}
+
+	sessionID, err := FindActiveAxonePaygoSessionID(7)
+	require.NoError(t, err)
+	require.Equal(t, "active_newest", sessionID)
+
+	sessionID, err = FindActiveAxonePaygoSessionID(9)
+	require.NoError(t, err)
+	require.Empty(t, sessionID)
+}
+
 func TestEnqueueAxonePaygoChargeRejectsConcurrentProcessing(t *testing.T) {
 	db := setupAxonePaygoTestDB(t)
 	now := time.Now().Unix()

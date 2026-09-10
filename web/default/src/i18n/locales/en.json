@@ -498,6 +498,7 @@
     "Select a wallet": "Select a wallet",
     "Session": "Session",
     "The lock amount cannot exceed the wallet balance": "The lock amount cannot exceed the wallet balance",
+    "The newest active payment session is used automatically for Playground and AI API requests. You can still use the X-Kovar-Payment-Session header to select another session.": "The newest active payment session is used automatically for Playground and AI API requests. You can still use the X-Kovar-Payment-Session header to select another session.",
     "Up to 8 decimal places": "Up to 8 decimal places",
     "AXOne public key used to verify webhook signatures": "AXOne public key used to verify webhook signatures",
     "AXOne sends payment success notifications to /api/axone/webhook. Configure this path as the merchant callback URL in AXOne.": "AXOne sends payment success notifications to /api/axone/webhook. Configure this path as the merchant callback URL in AXOne.",

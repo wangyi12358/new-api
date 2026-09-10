@@ -289,7 +289,6 @@ export default function SettingsPaymentGatewayAxone(props) {
                 field='AxonePaygoChargeThreshold'
                 label={t('AXOne 扣款阈值')}
                 placeholder='1.00000000'
-                disabled={inputs.AxonePaygoChargeMode !== 'threshold'}
                 extraText={t('支持最多 8 位小数的 USDC 或 USDT 金额。')}
               />
             </Col>

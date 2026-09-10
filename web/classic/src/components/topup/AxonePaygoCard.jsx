@@ -241,7 +241,7 @@ const AxonePaygoCard = ({ t, enabled }) => {
         type='info'
         closeIcon={null}
         description={t(
-          '创建会话后，在每次 AI API 请求中通过 X-Kovar-Payment-Session 请求头传入会话 ID。',
+          '最新的有效支付会话会自动用于 Playground 和 AI API 请求；也可以通过 X-Kovar-Payment-Session 请求头指定其他会话。',
         )}
         className='!rounded-xl mb-4'
       />

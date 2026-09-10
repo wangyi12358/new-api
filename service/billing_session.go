@@ -360,6 +360,13 @@ func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preCons
 		paygoSessionID = strings.TrimSpace(c.GetHeader(AxonePaygoHeader))
 		c.Request.Header.Del(AxonePaygoHeader)
 	}
+	if paygoSessionID == "" && IsAxonePaygoReady() {
+		activeSessionID, err := FindActiveAxonePaygoSessionID(relayInfo.UserId)
+		if err != nil {
+			return nil, types.NewError(err, types.ErrorCodeQueryDataError, types.ErrOptionWithSkipRetry())
+		}
+		paygoSessionID = activeSessionID
+	}
 	if paygoSessionID != "" {
 		if !IsAxonePaygoReady() {
 			return nil, types.NewErrorWithStatusCode(ErrAxonePaygoDisabled, types.ErrorCodeInvalidRequest, http.StatusServiceUnavailable, types.ErrOptionWithSkipRetry())

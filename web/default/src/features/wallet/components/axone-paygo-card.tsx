@@ -172,7 +172,7 @@ export function AxonePaygoCard({ enabled }: { enabled: boolean }) {
           <AlertTitle>{t('How to use')}</AlertTitle>
           <AlertDescription>
             {t(
-              'Create a payment session, then send its ID in the X-Kovar-Payment-Session header with each AI API request.'
+              'The newest active payment session is used automatically for Playground and AI API requests. You can still use the X-Kovar-Payment-Session header to select another session.'
             )}
           </AlertDescription>
         </Alert>

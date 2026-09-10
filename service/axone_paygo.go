@@ -246,6 +246,28 @@ func ListAxonePaygoSessions(userID int, limit int) ([]*model.AxonePaygoSession, 
 	return sessions, err
 }
 
+// FindActiveAxonePaygoSessionID returns the user's most recently created active
+// and unexpired session. It lets first-party clients such as Playground use
+// PayGo without manually attaching a session header to every request.
+func FindActiveAxonePaygoSessionID(userID int) (string, error) {
+	if userID <= 0 {
+		return "", nil
+	}
+	session := &model.AxonePaygoSession{}
+	err := model.DB.
+		Where("user_id = ? AND status = ?", userID, "active").
+		Where("expires_at = ? OR expires_at > ?", 0, time.Now().Unix()).
+		Order("id desc").
+		First(session).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(session.SessionID), nil
+}
+
 func ReserveAxonePaygoRequest(userID int, sessionID string, requestID string, quota int) (int64, error) {
 	estimatedQ8, err := quotaToAxoneQ8(quota)
 	if err != nil {

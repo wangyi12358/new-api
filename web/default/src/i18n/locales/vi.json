@@ -498,6 +498,7 @@
     "Select a wallet": "Chọn ví",
     "Session": "Phiên",
     "The lock amount cannot exceed the wallet balance": "Số tiền khóa không được vượt quá số dư ví",
+    "The newest active payment session is used automatically for Playground and AI API requests. You can still use the X-Kovar-Payment-Session header to select another session.": "Phiên thanh toán đang hoạt động mới nhất sẽ tự động được dùng cho Playground và các yêu cầu AI API. Bạn vẫn có thể dùng header X-Kovar-Payment-Session để chọn phiên khác.",
     "Up to 8 decimal places": "Tối đa 8 chữ số thập phân",
     "AXOne public key used to verify webhook signatures": "Khóa công khai AXOne dùng để xác minh chữ ký webhook",
     "AXOne sends payment success notifications to /api/axone/webhook. Configure this path as the merchant callback URL in AXOne.": "AXOne gửi thông báo thanh toán thành công đến /api/axone/webhook. Hãy cấu hình đường dẫn này làm URL callback merchant trong AXOne.",

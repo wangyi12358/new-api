@@ -498,6 +498,7 @@
     "Select a wallet": "选择钱包",
     "Session": "会话",
     "The lock amount cannot exceed the wallet balance": "锁定金额不能超过钱包余额",
+    "The newest active payment session is used automatically for Playground and AI API requests. You can still use the X-Kovar-Payment-Session header to select another session.": "最新的有效支付会话会自动用于 Playground 和 AI API 请求；也可以通过 X-Kovar-Payment-Session 请求头指定其他会话。",
     "Up to 8 decimal places": "最多 8 位小数",
     "AXOne public key used to verify webhook signatures": "用于校验 AXOne webhook 签名的公钥",
     "AXOne sends payment success notifications to /api/axone/webhook. Configure this path as the merchant callback URL in AXOne.": "AXOne 会将支付成功通知发送到 /api/axone/webhook。请在 AXOne 中将此路径配置为商户回调地址。",
