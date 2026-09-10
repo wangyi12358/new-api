@@ -126,7 +126,17 @@ func TestAxonePaygoClientContract(t *testing.T) {
 		switch r.URL.Path {
 		case "/web/crypto/wallets":
 			require.Empty(t, r.Header.Get("Idempotency-Key"))
-			response = axoneResponse[AxoneWalletListData]{Data: AxoneWalletListData{Total: 1, Current: 1, List: []AxoneWallet{{ID: "wallet_1", Currency: "USD", TotalBalance: 12.5}}}}
+			response = map[string]any{
+				"code": 0,
+				"data": map[string]any{
+					"total": 1, "current": 1,
+					"list": []map[string]any{{
+						"id": "wallet_1", "currency": "USD", "amount": "10.5",
+						"price": "1.25", "total_balance": "12.5", "percent": 50,
+						"currency_icon": "https://example.test/usd.png",
+					}},
+				},
+			}
 		case "/web/agen-pay/sessions":
 			require.NotEmpty(t, r.Header.Get("Idempotency-Key"))
 			response = axoneResponse[AxonePaygoSessionData]{Data: AxonePaygoSessionData{SessionID: "aps_1", Status: "active", Currency: "USDC", ReservedAmount: "1.00000000", ConsumedAmount: "0.00000000"}}
@@ -157,6 +167,9 @@ func TestAxonePaygoClientContract(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, wallets.List, 1)
 	require.Equal(t, "wallet_1", wallets.List[0].ID)
+	require.Equal(t, AxoneNumber(1.25), wallets.List[0].Price)
+	require.Equal(t, AxoneNumber(12.5), wallets.List[0].TotalBalance)
+	require.Equal(t, AxoneNumber(50), wallets.List[0].Percent)
 	created, err := client.CreatePaygoSession(context.Background(), "wallet_1", "1.00000000", "create-key")
 	require.NoError(t, err)
 	require.Equal(t, "aps_1", created.SessionID)

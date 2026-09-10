@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -25,14 +26,41 @@ type AxoneChain struct {
 	Symbol    string `json:"symbol"`
 }
 
+// AxoneNumber accepts both JSON numbers and numeric strings. AXOne wallet
+// responses use both representations depending on the upstream deployment.
+type AxoneNumber float64
+
+func (n *AxoneNumber) UnmarshalJSON(data []byte) error {
+	var number float64
+	if err := common.Unmarshal(data, &number); err == nil {
+		*n = AxoneNumber(number)
+		return nil
+	}
+
+	var value string
+	if err := common.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	parsed, err := strconv.ParseFloat(strings.TrimSpace(value), 64)
+	if err != nil {
+		return fmt.Errorf("invalid AXOne numeric value %q: %w", value, err)
+	}
+	*n = AxoneNumber(parsed)
+	return nil
+}
+
+func (n AxoneNumber) MarshalJSON() ([]byte, error) {
+	return common.Marshal(float64(n))
+}
+
 type AxoneWallet struct {
-	ID           string  `json:"id"`
-	Currency     string  `json:"currency"`
-	Amount       float64 `json:"amount"`
-	Price        float64 `json:"price"`
-	TotalBalance float64 `json:"total_balance"`
-	Percent      float64 `json:"percent"`
-	CurrencyIcon string  `json:"currency_icon"`
+	ID           string      `json:"id"`
+	Currency     string      `json:"currency"`
+	Amount       AxoneNumber `json:"amount"`
+	Price        AxoneNumber `json:"price"`
+	TotalBalance AxoneNumber `json:"total_balance"`
+	Percent      AxoneNumber `json:"percent"`
+	CurrencyIcon string      `json:"currency_icon"`
 }
 
 type AxoneWalletListData struct {
