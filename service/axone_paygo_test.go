@@ -117,19 +117,24 @@ func TestEnqueueAxonePaygoChargeRejectsConcurrentProcessing(t *testing.T) {
 }
 
 func TestAxonePaygoClientContract(t *testing.T) {
-	requests := make([]string, 0, 4)
+	requests := make([]string, 0, 5)
 	httpClient := &http.Client{Transport: axoneRoundTripFunc(func(r *http.Request) (*http.Response, error) {
 		require.Equal(t, "Bearer access-token", r.Header.Get("Authorization"))
-		require.NotEmpty(t, r.Header.Get("Idempotency-Key"))
 		requests = append(requests, r.Method+" "+r.URL.Path)
 
 		var response any
 		switch r.URL.Path {
+		case "/web/crypto/wallets":
+			require.Empty(t, r.Header.Get("Idempotency-Key"))
+			response = axoneResponse[AxoneWalletListData]{Data: AxoneWalletListData{Total: 1, Current: 1, List: []AxoneWallet{{ID: "wallet_1", Currency: "USD", TotalBalance: 12.5}}}}
 		case "/web/agen-pay/sessions":
+			require.NotEmpty(t, r.Header.Get("Idempotency-Key"))
 			response = axoneResponse[AxonePaygoSessionData]{Data: AxonePaygoSessionData{SessionID: "aps_1", Status: "active", Currency: "USDC", ReservedAmount: "1.00000000", ConsumedAmount: "0.00000000"}}
 		case "/web/agen-pay/sessions/aps_1/usage":
+			require.NotEmpty(t, r.Header.Get("Idempotency-Key"))
 			response = axoneResponse[AxonePaygoUsageData]{Data: AxonePaygoUsageData{SessionID: "aps_1", AcceptedThroughSeq: 1, ChargeAmount: "0.10000000", ConsumedAmount: "0.10000000"}}
 		case "/web/agen-pay/sessions/aps_1/close":
+			require.NotEmpty(t, r.Header.Get("Idempotency-Key"))
 			response = axoneResponse[AxonePaygoSessionData]{Data: AxonePaygoSessionData{SessionID: "aps_1", Status: "closed", Currency: "USDC", ReservedAmount: "1.00000000", ConsumedAmount: "0.10000000"}}
 		default:
 			t.Fatalf("unexpected request path: %s", r.URL.Path)
@@ -148,6 +153,10 @@ func TestAxonePaygoClientContract(t *testing.T) {
 		baseURL: "https://axone.test", account: "account", password: "password", httpClient: httpClient,
 		token: axoneTokenState{AccessToken: "access-token", AccessTokenExpiresAt: time.Now().Add(time.Hour).UnixMilli()},
 	}
+	wallets, err := client.ListWallets(context.Background())
+	require.NoError(t, err)
+	require.Len(t, wallets.List, 1)
+	require.Equal(t, "wallet_1", wallets.List[0].ID)
 	created, err := client.CreatePaygoSession(context.Background(), "wallet_1", "1.00000000", "create-key")
 	require.NoError(t, err)
 	require.Equal(t, "aps_1", created.SessionID)
@@ -158,6 +167,7 @@ func TestAxonePaygoClientContract(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "closed", closed.Status)
 	require.Equal(t, []string{
+		"GET /web/crypto/wallets",
 		"POST /web/agen-pay/sessions",
 		"POST /web/agen-pay/sessions/aps_1/usage",
 		"POST /web/agen-pay/sessions/aps_1/close",

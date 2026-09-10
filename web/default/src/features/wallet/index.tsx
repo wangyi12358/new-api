@@ -23,6 +23,7 @@ import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
 import { SectionPageLayout } from '@/components/layout'
 import { AffiliateRewardsCard } from './components/affiliate-rewards-card'
+import { AxonePaygoCard } from './components/axone-paygo-card'
 import { BillingHistoryDialog } from './components/dialogs/billing-history-dialog'
 import { CreemConfirmDialog } from './components/dialogs/creem-confirm-dialog'
 import { PaymentConfirmDialog } from './components/dialogs/payment-confirm-dialog'
@@ -312,6 +313,8 @@ export function Wallet(props: WalletProps) {
                 onAvailabilityChange={handleSubscriptionAvailabilityChange}
               />
             </div>
+
+            <AxonePaygoCard enabled={topupInfo?.enable_axone_paygo === true} />
 
             <AffiliateRewardsCard
               user={user}

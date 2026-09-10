@@ -63,6 +63,9 @@ export type WaffoPancakePaymentResponse = ApiResponse<
 
 export type AxoneChainsResponse = ApiResponse<AxoneChain[]>
 export type AxoneAddressResponse = ApiResponse<AxoneAddressData>
+export type AxoneWalletsResponse = ApiResponse<AxoneWalletListData>
+export type AxonePaygoSessionsResponse = ApiResponse<AxonePaygoSession[]>
+export type AxonePaygoSessionResponse = ApiResponse<AxonePaygoSession>
 
 /**
  * Creem product configuration
@@ -124,6 +127,45 @@ export interface AxoneChain {
   chain_id: string
   chain_name: string
   symbol: string
+}
+
+export interface AxoneWallet {
+  id: string
+  currency: string
+  amount: number
+  price: number
+  total_balance: number
+  percent: number
+  currency_icon: string
+}
+
+export interface AxoneWalletListData {
+  total: number
+  current: number
+  list: AxoneWallet[]
+}
+
+export interface AxonePaygoSession {
+  id: number
+  session_id: string
+  wallet_id: string
+  currency: string
+  status: string
+  reserved_q8: number
+  accrued_q8: number
+  provider_consumed_q8: number
+  in_flight_q8: number
+  pending_q8: number
+  last_event_seq: number
+  expires_at: number
+  closed_at: number
+  created_at: number
+  updated_at: number
+}
+
+export interface CreateAxonePaygoSessionRequest {
+  wallet_id: string
+  max_amount: string
 }
 
 export interface AxoneAddressRequest {
@@ -198,6 +240,8 @@ export interface TopupInfo {
   waffo_pancake_min_topup?: number
   /** Whether AXOne stablecoin topup is enabled */
   enable_axone_topup?: boolean
+  /** Whether AXOne PayGo streaming payment is enabled */
+  enable_axone_paygo?: boolean
   /** Configured AXOne currencies */
   axone_currencies?: string[]
   /** Whether redemption code usage is enabled */

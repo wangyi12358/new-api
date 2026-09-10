@@ -43,6 +43,10 @@ import type {
   AxoneAddressRequest,
   AxoneAddressResponse,
   TopupStatusData,
+  AxoneWalletsResponse,
+  AxonePaygoSessionsResponse,
+  AxonePaygoSessionResponse,
+  CreateAxonePaygoSessionRequest,
 } from './types'
 
 // ============================================================================
@@ -61,6 +65,56 @@ export function isApiSuccess(response: ApiResponse): boolean {
  */
 export async function getTopupInfo(): Promise<TopupInfoResponse> {
   const res = await api.get('/api/user/topup/info')
+  return res.data
+}
+
+export async function getAxoneWallets(): Promise<AxoneWalletsResponse> {
+  const res = await api.get('/api/user/axone/wallets', {
+    skipBusinessError: true,
+  } as Record<string, unknown>)
+  return res.data
+}
+
+export async function getAxonePaygoSessions(): Promise<AxonePaygoSessionsResponse> {
+  const res = await api.get('/api/user/axone/paygo/sessions', {
+    skipBusinessError: true,
+  } as Record<string, unknown>)
+  return res.data
+}
+
+export async function createAxonePaygoSession(
+  request: CreateAxonePaygoSessionRequest,
+  idempotencyKey: string
+): Promise<AxonePaygoSessionResponse> {
+  const res = await api.post('/api/user/axone/paygo/sessions', request, {
+    skipBusinessError: true,
+    headers: { 'Idempotency-Key': idempotencyKey },
+  } as Record<string, unknown>)
+  return res.data
+}
+
+export async function refreshAxonePaygoSession(
+  sessionId: string
+): Promise<AxonePaygoSessionResponse> {
+  const res = await api.get(
+    `/api/user/axone/paygo/sessions/${encodeURIComponent(sessionId)}`,
+    { skipBusinessError: true } as Record<string, unknown>
+  )
+  return res.data
+}
+
+export async function closeAxonePaygoSession(
+  sessionId: string,
+  idempotencyKey: string
+): Promise<AxonePaygoSessionResponse> {
+  const res = await api.post(
+    `/api/user/axone/paygo/sessions/${encodeURIComponent(sessionId)}/close`,
+    null,
+    {
+      skipBusinessError: true,
+      headers: { 'Idempotency-Key': idempotencyKey },
+    } as Record<string, unknown>
+  )
   return res.data
 }
 

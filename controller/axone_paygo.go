@@ -34,6 +34,19 @@ func CreateAxonePaygoSession(c *gin.Context) {
 	common.ApiSuccess(c, session)
 }
 
+func ListAxoneWallets(c *gin.Context) {
+	if !service.IsAxonePaygoReady() {
+		respondAxonePaygoError(c, service.ErrAxonePaygoDisabled)
+		return
+	}
+	wallets, err := service.GetAxoneClient().ListWallets(c.Request.Context())
+	if err != nil {
+		respondAxonePaygoError(c, err)
+		return
+	}
+	common.ApiSuccess(c, wallets)
+}
+
 func ListAxonePaygoSessions(c *gin.Context) {
 	sessions, err := service.ListAxonePaygoSessions(c.GetInt("id"), 50)
 	if err != nil {

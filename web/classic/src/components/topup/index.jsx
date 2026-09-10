@@ -35,6 +35,7 @@ import { UserContext } from '../../context/User';
 import { StatusContext } from '../../context/Status';
 
 import RechargeCard from './RechargeCard';
+import AxonePaygoCard from './AxonePaygoCard';
 import InvitationCard from './InvitationCard';
 import TransferModal from './modals/TransferModal';
 import PaymentConfirmModal from './modals/PaymentConfirmModal';
@@ -96,6 +97,7 @@ const TopUp = () => {
   const [enableWaffoPancakeTopUp, setEnableWaffoPancakeTopUp] = useState(false);
   const [waffoPancakeMinTopUp, setWaffoPancakeMinTopUp] = useState(1);
   const [enableAxoneTopUp, setEnableAxoneTopUp] = useState(false);
+  const [enableAxonePaygo, setEnableAxonePaygo] = useState(false);
   const [axoneCurrencies, setAxoneCurrencies] = useState([]);
   const [axoneChains, setAxoneChains] = useState([]);
   const [selectedAxoneCurrency, setSelectedAxoneCurrency] = useState('');
@@ -712,6 +714,7 @@ const TopUp = () => {
           const enableWaffoPancakeTopUp =
             data.enable_waffo_pancake_topup || false;
           const enableAxoneTopUp = data.enable_axone_topup || false;
+          const enableAxonePaygo = data.enable_axone_paygo || false;
           const minTopUpValue = enableOnlineTopUp
             ? data.min_topup
             : enableAlipayTopUp
@@ -735,6 +738,7 @@ const TopUp = () => {
           setEnableWaffoPancakeTopUp(enableWaffoPancakeTopUp);
           setWaffoPancakeMinTopUp(data.waffo_pancake_min_topup || 1);
           setEnableAxoneTopUp(enableAxoneTopUp);
+          setEnableAxonePaygo(enableAxonePaygo);
           const currencies = Array.isArray(data.axone_currencies)
             ? data.axone_currencies
             : [];
@@ -1314,6 +1318,7 @@ const TopUp = () => {
           handleAffLinkClick={handleAffLinkClick}
           complianceConfirmed={topupInfo.payment_compliance_confirmed !== false}
         />
+        <AxonePaygoCard t={t} enabled={enableAxonePaygo} />
       </div>
     </div>
   );

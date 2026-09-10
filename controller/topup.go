@@ -126,6 +126,7 @@ func GetTopUpInfo(c *gin.Context) {
 		"enable_waffo_topup":               enableWaffo,
 		"enable_waffo_pancake_topup":       enableWaffoPancake,
 		"enable_axone_topup":               enableAxone,
+		"enable_axone_paygo":               service.IsAxonePaygoReady(),
 		"enable_redemption":                complianceConfirmed,
 		"payment_compliance_confirmed":     complianceConfirmed,
 		"payment_compliance_terms_version": operation_setting.CurrentComplianceTermsVersion,

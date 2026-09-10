@@ -25,6 +25,22 @@ type AxoneChain struct {
 	Symbol    string `json:"symbol"`
 }
 
+type AxoneWallet struct {
+	ID           string  `json:"id"`
+	Currency     string  `json:"currency"`
+	Amount       float64 `json:"amount"`
+	Price        float64 `json:"price"`
+	TotalBalance float64 `json:"total_balance"`
+	Percent      float64 `json:"percent"`
+	CurrencyIcon string  `json:"currency_icon"`
+}
+
+type AxoneWalletListData struct {
+	Total   int           `json:"total"`
+	Current int           `json:"current"`
+	List    []AxoneWallet `json:"list"`
+}
+
 type axoneLoginData struct {
 	AccessToken           string `json:"accessToken"`
 	RefreshToken          string `json:"refreshToken"`
@@ -154,6 +170,29 @@ func (c *AxoneClient) ListChains(ctx context.Context) ([]AxoneChain, error) {
 		return nil, axoneResponseError(resp.Message)
 	}
 	return resp.Data.Data, nil
+}
+
+func (c *AxoneClient) ListWallets(ctx context.Context) (*AxoneWalletListData, error) {
+	if err := c.ensureReady(); err != nil {
+		return nil, err
+	}
+
+	accessToken, err := c.ensureAccessToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp axoneResponse[AxoneWalletListData]
+	if err := c.doJSONRequest(ctx, http.MethodGet, "/web/crypto/wallets", nil, accessToken, &resp); err != nil {
+		return nil, err
+	}
+	if resp.Code != 0 {
+		return nil, axoneResponseError(resp.Message)
+	}
+	if resp.Data.List == nil {
+		resp.Data.List = []AxoneWallet{}
+	}
+	return &resp.Data, nil
 }
 
 func (c *AxoneClient) GetWalletAddress(ctx context.Context, currency string, chainID string) (string, error) {
