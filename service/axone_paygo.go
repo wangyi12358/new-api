@@ -516,15 +516,24 @@ func processAxonePaygoCharge(ctx context.Context, charge *model.AxonePaygoCharge
 		return nil
 	}
 
+	chargeAmount := FormatAxoneQ8(charge.AmountQ8)
+	common.SysLog(fmt.Sprintf(
+		"AXOne PayGo usage request: session_id=%s event_id=%s event_seq=%d charge_amount=%s",
+		charge.SessionID, charge.EventID, charge.EventSeq, chargeAmount,
+	))
 	result, err := GetAxoneClient().SubmitPaygoUsage(
 		ctx,
 		charge.SessionID,
 		charge.EventID,
 		charge.EventSeq,
-		FormatAxoneQ8(charge.AmountQ8),
+		chargeAmount,
 		charge.IdempotencyKey,
 	)
 	if err != nil {
+		common.SysLog(fmt.Sprintf(
+			"AXOne PayGo usage request failed: session_id=%s event_id=%s event_seq=%d charge_amount=%s error=%q",
+			charge.SessionID, charge.EventID, charge.EventSeq, chargeAmount, err.Error(),
+		))
 		markAxonePaygoChargePending(charge.Id, err)
 		return err
 	}
@@ -564,8 +573,13 @@ func processAxonePaygoCharge(ctx context.Context, charge *model.AxonePaygoCharge
 		// AXOne may already have accepted the event. Returning it to the durable
 		// outbox is safe because the provider request is idempotent.
 		markAxonePaygoChargePending(charge.Id, err)
+		return err
 	}
-	return err
+	common.SysLog(fmt.Sprintf(
+		"AXOne PayGo usage accepted: session_id=%s event_id=%s event_seq=%d charge_amount=%s accepted_through_seq=%d provider_consumed=%s provider_remaining=%s",
+		charge.SessionID, charge.EventID, charge.EventSeq, chargeAmount, result.AcceptedThroughSeq, result.ConsumedAmount, result.RemainingAmount,
+	))
+	return nil
 }
 
 func markAxonePaygoChargePending(chargeID int64, cause error) {
